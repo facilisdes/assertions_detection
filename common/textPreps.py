@@ -1,10 +1,55 @@
+from pymystem3 import Mystem
 
 def prepareMessage(message):
     # step 1 - remove citations, etc
     message = __removeBrackets(message)
 
-
     return message
+
+
+def analyzeMessage(message):
+    m = Mystem()
+    rawAnalytics = m.analyze(message)
+
+    analytics = list()
+    lemmas = list()
+
+    for rawAnalytic in rawAnalytics:
+        if 'analysis' in rawAnalytic and len(rawAnalytic['analysis']) > 0:
+            POS = rawAnalytic['analysis'][0]['gr'].split(',')[0]
+            if '=' in POS:
+                POS = POS.split('=')[0]
+
+            isObscene = "обсц" in rawAnalytic['analysis'][0]['gr']
+
+            lemma = rawAnalytic['analysis'][0]['lex']
+
+            analytic = {
+                'POS': POS,
+                'lemma': lemma,
+                'rawText': rawAnalytic['text'],
+                'isObscene': isObscene
+            }
+
+            if POS == 'V':
+                isImperative = "пов" in rawAnalytic['analysis'][0]['gr']
+                isIndicative = "изъяв" in rawAnalytic['analysis'][0]['gr']
+                isGerund = "деепр" in rawAnalytic['analysis'][0]['gr']
+                isParticiple = "прич" in rawAnalytic['analysis'][0]['gr']
+                isInfinitive = "инф" in rawAnalytic['analysis'][0]['gr']
+
+                analytic['verbsCharacteristics'] = {
+                    'isImperative': isImperative,
+                    'isIndicative': isIndicative,
+                    'isGerund': isGerund,
+                    'isParticiple': isParticiple,
+                    'isInfinitive': isInfinitive
+                }
+
+            analytics.append(analytic)
+            lemmas.append(lemma)
+
+    return analytics, lemmas
 
 def __removeBrackets(message):
     openingTags = ['\"', '\'', '(', '[']
@@ -37,3 +82,4 @@ def __removeBrackets(message):
         message = message[:startIndex] + message[endIndex:]
 
     return message
+

@@ -1,5 +1,10 @@
 class nGramsFeaturesBuilder:
     def __init__(self, messagesList, classesList):
+        """
+        инициализация
+        :param messagesList: list
+        :param classesList: list
+        """
         self.messages = messagesList
         for message in messagesList:
             wordsGroup = self.__buildWordsGroups(message)
@@ -7,17 +12,17 @@ class nGramsFeaturesBuilder:
 
 
     def __buildWordsGroups(self, message):
-        # поиск групп слов, разделённых только пробелами - кандидатов в n-граммы
+        """
+        поиск групп слов, разделённых только пробелами - кандидатов в n-граммы
+        :param message: list
+        :return: list
+        """
         wordsBlocks = list()
         wordsBlock = list()
         for analytic in message:
-            if not 'analysis' in analytic:
-                # если данных по анализу текста нет - в тексте нет слов
-                if analytic['text'] != ' ':
-                    # и текст не равен пробелу, то блок закрываем
-                    if len(wordsBlock) > 0:
-                        wordsBlocks.append(wordsBlock)
-                        wordsBlock = list()
+            if len(wordsBlock) > 0:
+                wordsBlocks.append(wordsBlock)
+                wordsBlock = list()
             else:
                 # если данные по анализу есть, фиксируем текст в блоке
                 wordsBlock.append(analytic)

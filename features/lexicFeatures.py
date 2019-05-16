@@ -97,22 +97,19 @@ class lexicFeatures:
         AFound = False
         # проверяем каждое слово сообщения
         for word in analysis:
-            # опираемся на формат выхода mystem - если в массиве на сообщение есть индекс analysis и в нём больше 0 эл-тов
-            if 'analysis' in word and len(word['analysis']) > 0:
-                # то коды частей речи находятся в первом подмассиве под индексом gr, берём первую
-                POS = word['analysis'][0]['gr'].split(',')[0]
-                if '=' in POS:
-                    POS = POS.split('=')[0]
+            POS = word['POS']
+            if '=' in POS:
+                POS = POS.split('=')[0]
 
-                if(POS=='INTJ'):
-                    INTJFound = True
-                    result[0] = 1
+            if (POS == 'INTJ'):
+                INTJFound = True
+                result[0] = 1
 
-                if(POS=='A' or POS=='ANUM' or POS=='APRO'):
-                    AFound = True
-                    result[1] = 1
+            if (POS == 'A' or POS == 'ANUM' or POS == 'APRO'):
+                AFound = True
+                result[1] = 1
 
-                if(INTJFound and AFound):
-                    break
+            if (INTJFound and AFound):
+                break
 
         return result

@@ -1,8 +1,8 @@
 from .nGramsFeaturesBuilder import nGramsFeaturesBuilder
 from .lexicFeatures import lexicFeatures
 from .semanticFeatures import semanticFeatures
-from pymystem3 import Mystem
 from common.debug import *
+from common import textPreps
 
 
 class featuresExtractor:
@@ -13,15 +13,17 @@ class featuresExtractor:
         :param trainClasses: list
         """
         trainMessagesAnalytics = list()
-        m = Mystem()
         # для каждого сообщения из обучающей выборки
         for trainMessage in trainMessages:
             # получаем данные аналитики
-            analytic = m.analyze(trainMessage)
+            analytic, lemmas = textPreps.analyzeMessage(trainMessage)
             trainMessagesAnalytics.append(analytic)
         # и затем строим список n-грам
         obj = nGramsFeaturesBuilder(trainMessagesAnalytics, trainClasses)
         self.ngrams = obj.getNGramsList()
+
+        self.lf = lexicFeatures()
+        self.sf = semanticFeatures()
 
     def getFeaturesVector(self, message):
         """
@@ -29,11 +31,12 @@ class featuresExtractor:
         :param message: string
         :return: list
         """
-        m = Mystem()
         # лемматизация сообщения
-        lemmas = m.lemmatize(message)
+        # lemmas = m.lemmatize(message)
         # получение разбора сообщения
-        details = m.analyze(message)
+        # details = m.analyze(message)
+
+        details, lemmas = textPreps.analyzeMessage(message)
 
         vector = list()
 
@@ -70,11 +73,10 @@ class featuresExtractor:
         :return: list
         """
         vector = list()
-        sf = semanticFeatures()
-        vector.append(sf.getOpinionWordsRating(lemmas))
-        vector.append(sf.getSmilesRating(message, lemmas))
-        vector.append(sf.getVulgarWordsRating(analysis, lemmas))
-        vector.extend(sf.getSpeechActVerbsRatings(analysis))
+        vector.append(self.sf.getOpinionWordsRating(lemmas))
+        vector.append(self.sf.getSmilesRating(message, lemmas))
+        vector.append(self.sf.getVulgarWordsRating(analysis, lemmas))
+        vector.extend(self.sf.getSpeechActVerbsRatings(analysis, lemmas))
         return vector
 
     def __getLexicFeatures(self, message, lemmas, analysis):
@@ -86,10 +88,9 @@ class featuresExtractor:
         :return: list
         """
         vector = list()
-        lf = lexicFeatures()
-        vector.extend(lf.getAbbreviationsRatings(lemmas))
-        vector.extend(lf.getPunctuantionRatings(message))
-        vector.extend(lf.getPOSRatings(analysis))
-        vector.extend(lf.getTwitterSpecificsRatings(message))
+        vector.extend(self.lf.getAbbreviationsRatings(lemmas))
+        vector.extend(self.lf.getPunctuantionRatings(message))
+        vector.extend(self.lf.getPOSRatings(analysis))
+        vector.extend(self.lf.getTwitterSpecificsRatings(message))
         return vector
 
