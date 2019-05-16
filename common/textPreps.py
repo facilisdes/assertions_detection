@@ -1,5 +1,6 @@
 from pymystem3 import Mystem
 
+
 def prepareMessage(message):
     # step 1 - remove citations, etc
     message = __removeBrackets(message)
@@ -51,6 +52,7 @@ def analyzeMessage(message):
 
     return analytics, lemmas
 
+
 def __removeBrackets(message):
     openingTags = ['\"', '\'', '(', '[']
     closingTags = ['\"', '\'', ')', ']']
@@ -64,8 +66,8 @@ def __removeBrackets(message):
             bracket = [i]
             currentTag = closingTags[openingTags.index(char)]
 
-        else :
-            if char in closingTags and char==currentTag and level == 1:
+        else:
+            if char in closingTags and char == currentTag and level == 1:
                 level = level - 1
                 bracket.append(i)
                 brackets.append(bracket)

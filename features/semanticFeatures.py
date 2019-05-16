@@ -1,4 +1,5 @@
-import os, csv
+import os
+import csv
 from emoji import UNICODE_EMOJI
 
 
@@ -14,16 +15,16 @@ class semanticFeatures:
 
         curDir = os.path.dirname(__file__)
         # берём текущий путь и считаем пути относительно его
-        if speechActVerbsList == False:
+        if speechActVerbsList is False:
             speechActVerbsList = 'data/speechActVerbs.csv'
             speechActVerbsList = os.path.join(curDir, speechActVerbsList)
-        if opinionWordsList == False:
+        if opinionWordsList is False:
             opinionWordsList = 'data/opinionWords.csv'
             opinionWordsList = os.path.join(curDir, opinionWordsList)
-        if smilesList == False:
+        if smilesList is False:
             smilesList = 'data/smiles.csv'
             smilesList = os.path.join(curDir, smilesList)
-        if vulgarWordsList == False:
+        if vulgarWordsList is False:
             vulgarWordsList = 'data/vulgarWords.csv'
             vulgarWordsList = os.path.join(curDir, vulgarWordsList)
 
@@ -45,7 +46,6 @@ class semanticFeatures:
             self.smilesList = [el[0] for el in csv.reader(f, delimiter=";")]
         with open(vulgarWordsList, 'r', encoding='utf-8-sig') as f:
             self.vulgarWordsList = [el[0] for el in csv.reader(f, delimiter=";")]
-
 
     def getOpinionWordsRating(self, lemmas):
         """
@@ -114,7 +114,7 @@ class semanticFeatures:
         :return: list
         """
         # список обозначений искомых форм и наклонений согласно формата mystem
-        verbFeatures = ["isImperative","isIndicative","isGerund","isParticiple","isInfinitive"]
+        verbFeatures = ["isImperative", "isIndicative", "isGerund", "isParticiple", "isInfinitive"]
         vector = [0] * len(self.speechActVerbsList)
 
         # первым делом проверяем слова соообщения на их наличие в словаре
@@ -129,15 +129,14 @@ class semanticFeatures:
             # если все искомые формы уже встретились, завершаем поиск
             if POSVector == fullPOSVector:
                 break
-            if word['POS'] != 'V': continue;
+            if word['POS'] != 'V':
+                continue
             for index, verbFeature in enumerate(verbFeatures):
-                if (
-                'verbsCharacteristics' in word and
-                verbFeature in word['verbsCharacteristics'] and
-                word['verbsCharacteristics'][verbFeature]
+                if ('verbsCharacteristics' in word and
+                        verbFeature in word['verbsCharacteristics'] and
+                        word['verbsCharacteristics'][verbFeature]
                 ):
                     POSVector[index] = 1
-
 
         vector.extend(POSVector)
 

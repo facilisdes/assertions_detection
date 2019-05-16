@@ -1,7 +1,6 @@
 from .nGramsFeaturesBuilder import nGramsFeaturesBuilder
 from .lexicFeatures import lexicFeatures
 from .semanticFeatures import semanticFeatures
-from common.debug import *
 from common import textPreps
 
 
@@ -31,26 +30,23 @@ class featuresExtractor:
         :param message: string
         :return: list
         """
-        # лемматизация сообщения
-        # lemmas = m.lemmatize(message)
-        # получение разбора сообщения
-        # details = m.analyze(message)
 
+        # получение разбора сообщения и лемматизация
         details, lemmas = textPreps.analyzeMessage(message)
 
         vector = list()
 
         # определение значений семантических признаков
-        semanticFeatures = self.__getSemanticFeatures(message, lemmas, details)
+        semanticFeaturesList = self.__getSemanticFeatures(message, lemmas, details)
         # определение значений лексических признаков
-        lexicFeatures = self.__getLexicFeatures(message, lemmas, details)
+        lexicFeaturesList = self.__getLexicFeatures(message, lemmas, details)
         # определение значений признаков на n-граммах
-        nGramsFeatures = self.__getNGramsRating(lemmas)
+        nGramsFeaturesList = self.__getNGramsRating(lemmas)
 
         # запись полученных значений в один список
-        vector.extend(semanticFeatures)
-        vector.extend(lexicFeatures)
-        vector.extend(nGramsFeatures)
+        vector.extend(semanticFeaturesList)
+        vector.extend(lexicFeaturesList)
+        vector.extend(nGramsFeaturesList)
 
         return vector
 
@@ -61,7 +57,7 @@ class featuresExtractor:
         :return: list
         """
         # для каждой n-граммы - если она есть в списке лемм, то признак равен 1, иначе 0
-        vector = [ 1 if ngram in lemmas else 0 for i, ngram in enumerate(self.ngrams)]
+        vector = [1 if ngram in lemmas else 0 for i, ngram in enumerate(self.ngrams)]
         return vector
 
     def __getSemanticFeatures(self, message, lemmas, analysis):

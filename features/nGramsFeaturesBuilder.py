@@ -10,7 +10,6 @@ class nGramsFeaturesBuilder:
             wordsGroup = self.__buildWordsGroups(message)
             ngrams = self.__buildRawNGrams(wordsGroup)
 
-
     def __buildWordsGroups(self, message):
         """
         поиск групп слов, разделённых только пробелами - кандидатов в n-граммы
@@ -52,7 +51,7 @@ class nGramsFeaturesBuilder:
         wordsList.extend(bigrams)
         wordsList.extend(trigrams)
 
-        return {'ngrams': wordsList, 'unograms':unograms, 'bigrams':bigrams, 'trigrams':trigrams}
+        return {'ngrams': wordsList, 'unograms': unograms, 'bigrams': bigrams, 'trigrams': trigrams}
 
     def __countWordsDocumentFrequency(self):
         return 0

@@ -1,6 +1,6 @@
 import functools
 import time
-
+# from common.debug import *
 
 def execTimer(func):
     """Print the runtime of the decorated function"""
@@ -13,6 +13,7 @@ def execTimer(func):
         print(f"Finished {func.__name__!r} in {run_time:.4f} secs")
         return value
     return wrapper_timer
+
 
 def log(func):
     """logs function's output"""

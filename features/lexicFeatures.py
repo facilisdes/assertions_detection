@@ -3,7 +3,7 @@ import os
 
 
 class lexicFeatures:
-    def __init__(self, abbreviationsFile = 'data/abbreviations.csv'):
+    def __init__(self, abbreviationsFile='data/abbreviations.csv'):
         """
         инициализация
         :param abbreviationsFile:string
@@ -29,7 +29,7 @@ class lexicFeatures:
         if '?' in message:
             b = 1
 
-        return [a,b]
+        return [a, b]
 
     def getTwitterSpecificsRatings(self, message):
         """
@@ -101,15 +101,15 @@ class lexicFeatures:
             if '=' in POS:
                 POS = POS.split('=')[0]
 
-            if (POS == 'INTJ'):
+            if POS == 'INTJ':
                 INTJFound = True
                 result[0] = 1
 
-            if (POS == 'A' or POS == 'ANUM' or POS == 'APRO'):
+            if POS == 'A' or POS == 'ANUM' or POS == 'APRO':
                 AFound = True
                 result[1] = 1
 
-            if (INTJFound and AFound):
+            if INTJFound and AFound:
                 break
 
         return result
