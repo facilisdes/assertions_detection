@@ -7,10 +7,14 @@ class semanticFeatures:
     def __init__(self, speechActVerbsList=False, opinionWordsList=False, smilesList=False, vulgarWordsList=False):
         """
         инициализация - чтение данных из файлов
-        :param speechActVerbsList: string
-        :param opinionWordsList: string
-        :param smilesList: string
-        :param vulgarWordsList: string
+        :param speechActVerbsList: (опционально) путь к .csv-файлу со словарём глаголов, соответствующих опред. речевым актам
+        :type speechActVerbsList: string
+        :param opinionWordsList: (опционально) путь к .csv-файлу со словарём слов с яркой эмоциональной окраской
+        :type opinionWordsList: string
+        :param smilesList: (опционально) путь к .csv-файлу со списком смайликов
+        :type smilesList: string
+        :param vulgarWordsList: (опционально) путь к .csv-файлу со словарём вульгарных слов
+        :type vulgarWordsList: string
         """
 
         curDir = os.path.dirname(__file__)
@@ -50,8 +54,10 @@ class semanticFeatures:
     def getOpinionWordsRating(self, lemmas):
         """
         проверка на наличие в тексте слов с яркой эмоциональной окраской
-        :param lemmas: list
-        :return: int
+        :param lemmas: список лемм сообщения
+        :type lemmas: list
+        :return: результат проверки в виде числа (0 или 1)
+        :rtype: int
         """
         result = 0
         for lemma in self.opinionWordsList:
@@ -64,9 +70,12 @@ class semanticFeatures:
     def getVulgarWordsRating(self, analysis, lemmas):
         """
         проверка на наличие в тексте обсценной лексики
-        :param analysis: list
-        :param lemmas: list
-        :return: int
+        :param analysis: данные по анализу слов текста
+        :type analysis: list
+        :param lemmas: список лемм слов текста
+        :type lemmas: list
+        :return: результат проверки в виде числа (0 или 1)
+        :rtype: int
         """
         result = 0
         # проверяем каждое обсценное слово из словаря на наличие в тексте
@@ -85,9 +94,12 @@ class semanticFeatures:
     def getSmilesRating(self, message, lemmas):
         """
         проверка на наличие в тексте смайликов и эмодзи
-        :param message: list
-        :param lemmas: list
-        :return: int
+        :param message: текст сообщения
+        :type message: list
+        :param lemmas: список лемм слов текста
+        :type lemmas: list
+        :return: результат проверки в виде числа (0 или 1)
+        :rtype: int
         """
         result = 0
         # Проверяем все смайлики из словаря на наличие в тексте сообщения. Самая лёгкая проверка в надежде исключить
@@ -109,9 +121,12 @@ class semanticFeatures:
         """
         Проверка на наличие в тексте глаголов, соответствующих определённым речевым актам.
         Дополнительно реализована проверка на наличие глаголов в определённых формах и наклонениях
-        :param analysis: list
-        :param lemmas: list
-        :return: list
+        :param analysis: данные по анализу слов текста
+        :type analysis: list
+        :param lemmas: список лемм слов текста
+        :type lemmas: list
+        :return: результат проверки в виде массива
+        :rtype: list
         """
         # список обозначений искомых форм и наклонений согласно формата mystem
         verbFeatures = ["isImperative", "isIndicative", "isGerund", "isParticiple", "isInfinitive"]

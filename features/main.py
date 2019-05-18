@@ -7,39 +7,44 @@ from common import textPreps
 class featuresExtractor:
     def __init__(self, trainMessages, trainClasses):
         """
-        инициализация - получение данных анализа по входным сообщениям
-        :param trainMessages: list
-        :param trainClasses: list
+        инициализация объекта - получение данных анализа по входным сообщениям
+        :param trainMessages: сообщения обучающей выборки
+        :type trainMessages: list
+        :param trainClasses: классы сообщений обучающей выборки
+        :type trainClasses: list
         """
         trainMessagesAnalytics = list()
         # для каждого сообщения из обучающей выборки
         for trainMessage in trainMessages:
             # получаем данные аналитики
-            analytic, lemmas = textPreps.analyzeMessage(trainMessage)
-            trainMessagesAnalytics.append(analytic)
+            textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
+            trainMessagesAnalytics.append(textAnalytic)
         # и затем строим список n-грам
         obj = nGramsFeaturesBuilder(trainMessagesAnalytics, trainClasses)
         self.ngrams = obj.getNGramsList()
 
         self.lf = lexicFeatures()
         self.sf = semanticFeatures()
+        q = semanticFeatures()
 
     def getFeaturesVector(self, message):
         """
         построение вектора значений признаков для сообщения
-        :param message: string
-        :return: list
+        :param message: текст анализируемого сообщения
+        :type message: string
+        :return: вектор признаков данного сообщения
+        :rtype: list
         """
 
         # получение разбора сообщения и лемматизация
-        details, lemmas = textPreps.analyzeMessage(message)
+        textAnalytics, wordsAnalytics, lemmas = textPreps.analyzeText(message)
 
         vector = list()
 
         # определение значений семантических признаков
-        semanticFeaturesList = self.__getSemanticFeatures(message, lemmas, details)
+        semanticFeaturesList = self.__getSemanticFeatures(message, lemmas, wordsAnalytics)
         # определение значений лексических признаков
-        lexicFeaturesList = self.__getLexicFeatures(message, lemmas, details)
+        lexicFeaturesList = self.__getLexicFeatures(message, lemmas, wordsAnalytics)
         # определение значений признаков на n-граммах
         nGramsFeaturesList = self.__getNGramsRating(lemmas)
 
@@ -52,9 +57,11 @@ class featuresExtractor:
 
     def __getNGramsRating(self, lemmas):
         """
-        построение вектора значений по n-граммам
-        :param lemmas: list
-        :return: list
+        проверка на наличие n-грам в тексте сообщения
+        :param lemmas: список лемм сообщения
+        :type lemmas: list
+        :return: результат проверки в виде массива
+        :rtype: list
         """
         # для каждой n-граммы - если она есть в списке лемм, то признак равен 1, иначе 0
         vector = [1 if ngram in lemmas else 0 for i, ngram in enumerate(self.ngrams)]
@@ -63,10 +70,14 @@ class featuresExtractor:
     def __getSemanticFeatures(self, message, lemmas, analysis):
         """
         построение вектора значений по семантическим признакам
-        :param message: string
-        :param lemmas: list
-        :param analysis: list
-        :return: list
+        :param message: текст сообщения
+        :type message: string
+        :param lemmas: список лемм сообщения
+        :type lemmas: list
+        :param analysis: данные слов сообщения
+        :type analysis: list
+        :return: вектор семантических признаков
+        :rtype: list
         """
         vector = list()
         vector.append(self.sf.getOpinionWordsRating(lemmas))
@@ -78,10 +89,14 @@ class featuresExtractor:
     def __getLexicFeatures(self, message, lemmas, analysis):
         """
         построение вектора значений по лексическим признакам
-        :param message: string
-        :param lemmas: list
-        :param analysis: list
-        :return: list
+        :param message: текст сообщения
+        :type message: string
+        :param lemmas: список лемм сообщения
+        :type lemmas: list
+        :param analysis: данные слов сообщения
+        :type analysis: list
+        :return: вектор лексических признаков
+        :rtype: list
         """
         vector = list()
         vector.extend(self.lf.getAbbreviationsRatings(lemmas))

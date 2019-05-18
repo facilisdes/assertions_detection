@@ -5,8 +5,9 @@ import os
 class lexicFeatures:
     def __init__(self, abbreviationsFile='data/abbreviations.csv'):
         """
-        инициализация
-        :param abbreviationsFile:string
+        инициализация объекта
+        :param abbreviationsFile: (опционально) путь к файлу с сокращениями
+        :type abbreviationsFile: string
         """
         curDir = os.path.dirname(__file__)
         abbreviationsFile = os.path.join(curDir, abbreviationsFile)
@@ -19,8 +20,10 @@ class lexicFeatures:
     def getPunctuantionRatings(self, message):
         """
         проверка на наличие определенных знаков пунктуации в тексте сообщения
-        :param message: string
-        :return: list
+        :param message: текст сообщения
+        :type message: string
+        :return: результат проверки в виде массива
+        :rtype: list
         """
         a = 0
         b = 0
@@ -34,8 +37,10 @@ class lexicFeatures:
     def getTwitterSpecificsRatings(self, message):
         """
         проверка на наличие twitter-специфичных символов в тексте сообщения, а также их нахождения в начале сообщения
-        :param message: string
-        :return: list
+        :param message: текст сообщения
+        :type message: string
+        :return: результат проверки в виде массива
+        :rtype: list
         """
         a = 0
         aLocation = 0
@@ -65,14 +70,16 @@ class lexicFeatures:
     def getAbbreviationsRatings(self, lemmas):
         """
         проверка на наличие аббревиатур в тексте сообщения
-        :param lemmas: list
-        :return: list
+        :param lemmas: список лемм сообщения
+        :type lemmas: list
+        :return: результат проверки в виде массива
+        :rtype: list
         """
         # по умолчанию все признаки равны 0
         result = [0] * len(self.abbreviationsList)
 
         for index, abbreviation in enumerate(self.abbreviationsList):
-            # если элемент списка аббревиатур не список, значит, это единичная аббревиатура
+            # если элемент списка сокращений не список, значит, это единичная аббревиатура
             if type(abbreviation) != list:
                 # если аббревиатура равна проверяемому слову сообщения, то признак равен 1
                 if abbreviation in lemmas:
@@ -89,8 +96,10 @@ class lexicFeatures:
     def getPOSRatings(self, analysis):
         """
         проверка на наличие определенных частей речи
-        :param analysis: list
-        :return: list
+        :param analysis: данные по анализу слов сообщения
+        :type analysis: list
+        :return: результат проверки в виде массива
+        :rtype: list
         """
         result = [0, 0]
         INTJFound = False

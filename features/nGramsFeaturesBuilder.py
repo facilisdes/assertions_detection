@@ -1,20 +1,24 @@
 class nGramsFeaturesBuilder:
-    def __init__(self, messagesList, classesList):
+    def __init__(self, analyticsList, classesList):
         """
         инициализация
         :param messagesList: list
+        :type messagesList: list
         :param classesList: list
+        :type classesList: list
         """
-        self.messages = messagesList
-        for message in messagesList:
-            wordsGroup = self.__buildWordsGroups(message)
+        self.analytics = analyticsList
+        for analytic in analyticsList:
+            wordsGroup = self.__buildWordsGroups(analytic)
             ngrams = self.__buildRawNGrams(wordsGroup)
 
-    def __buildWordsGroups(self, message):
+    def __buildWordsGroups(self, analytic):
         """
         поиск групп слов, разделённых только пробелами - кандидатов в n-граммы
         :param message: list
+        :type message: list
         :return: list
+        :rtype: list
         """
         wordsBlocks = list()
         wordsBlock = list()
