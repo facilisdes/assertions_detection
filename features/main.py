@@ -17,7 +17,7 @@ class featuresExtractor:
         # для каждого сообщения из обучающей выборки
         for trainMessage in trainMessages:
             # получаем данные аналитики
-            textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
+            textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage, caching=True)
             trainMessagesAnalytics.append(textAnalytic)
         # и затем строим список n-грам
         obj = nGramsFeaturesBuilder(trainMessagesAnalytics, trainClasses)

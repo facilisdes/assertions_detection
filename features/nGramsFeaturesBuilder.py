@@ -1,3 +1,5 @@
+from common.debug import *
+
 class nGramsFeaturesBuilder:
     def __init__(self, analyticsList, classesList):
         """
@@ -8,59 +10,166 @@ class nGramsFeaturesBuilder:
         :type classesList: list
         """
         self.analytics = analyticsList
+        self.__train()
+
+    def __train(self):
+        """
+        процесс обучения - эмпирического определения n-грам по размеченным текстам
+        :return:
+        :rtype:
+        """
+        analyticsList = self.analytics
+        groupsList = list()
+        flatGroupsList = list()
+        candidatesGroupsList = list()
+
         for analytic in analyticsList:
             wordsGroup = self.__buildWordsGroups(analytic)
-            ngrams = self.__buildRawNGrams(wordsGroup)
+            groupsList.append(wordsGroup)
+            flatGroupsList.extend(wordsGroup)
+            ngramsCandidates = self.__buildRawNGrams(wordsGroup, 3)
+            candidatesGroupsList.append(ngramsCandidates)
 
-    def __buildWordsGroups(self, analytic):
+        for i, candidatesGroups in enumerate(candidatesGroupsList):
+            analytic = analyticsList[i]
+            wordsGroup = groupsList[i]
+
+            for candidateKey in candidatesGroups:
+                # модифицируем группы, прописывая в них частоты
+                candidatesGroups[candidateKey] = self.__countWordsDocumentFrequency(candidatesGroups[candidateKey], groupsList)
+
+        filteredCandidates = self.__filterNGramsByFrequency(candidatesGroupsList)
+        q=1
+
+    def __buildWordsGroups(self, analytics):
         """
-        поиск групп слов, разделённых только пробелами - кандидатов в n-граммы
-        :param message: list
-        :type message: list
-        :return: list
+        поиск групп слов, разделённых только пробелами
+        :param analytics: данные по анализу слов текста
+        :type analytics: list
+        :return: список групп слов в тексте
         :rtype: list
         """
+        nonBreakingTypes = ['space', 'word', 'enText', 'ruText', 'number']
+        ignoredTypes = ['space']
+
         wordsBlocks = list()
         wordsBlock = list()
-        for analytic in message:
-            if len(wordsBlock) > 0:
+        # перебираем все объекты текста
+        for analytic in analytics:
+            # если тип объекта не разрывает группу
+            if analytic['type'] in nonBreakingTypes:
+                # записываем объект в группу, если он не должен игнорироваться
+                if analytic['type'] not in ignoredTypes:
+                    wordsBlock.append(analytic)
+            # иначе, если группа не пуста, записываем её в список групп и сбрасываем
+            elif len(wordsBlock) > 0:
                 wordsBlocks.append(wordsBlock)
                 wordsBlock = list()
-            else:
-                # если данные по анализу есть, фиксируем текст в блоке
-                wordsBlock.append(analytic)
 
+        # по окончании работ записываем оставшуюся группу, если она не пуста
         if len(wordsBlock) > 0:
             wordsBlocks.append(wordsBlock)
+
         return wordsBlocks
+
 
     def getNGramsList(self):
         return ['a', 'b']
 
-    def __buildRawNGrams(self, wordsGroups):
-        wordsList = list()
-        unograms = list()
-        bigrams = list()
-        trigrams = list()
+    def __buildRawNGrams(self, wordsGroups, maxLength):
+        """
+        поиск "сырых" n-грамм в группах слов текста
+        :param wordsGroups: список разделяемых пробелами групп слов
+        :type wordsGroups: list
+        :param maxLength: максимальная длина n-грамм
+        :type maxLength: int
+        :return: словарь сырых n-грамм вида "длина: список n-грам"
+        :rtype: dict
+        """
+        ngrams = dict()
+        for length in range(1, maxLength + 1):
+            ngrams[length] = list()
+
+        # запускаем построение для каждой группы текста
         for wordsGroup in wordsGroups:
-            for i, word in enumerate(wordsGroup):
-                unograms.append(word)
-                if i+2 < len(wordsGroup):
-                    trigrams.append(wordsGroup[i:i+3])
-                    bigrams.append(wordsGroup[i:i+2])
-                elif i+1 < len(wordsGroup):
-                    bigrams.append(wordsGroup[i:i+2])
+            # перебираем все нужные длины n-грам
+            for length in range(1, maxLength + 1):
+                groups = list()
+                group = list()
+                # перебираем слова в группе
+                for word in wordsGroup:
+                    # добавляем слово в группу
+                    group.append(word)
+                    # и, если длина группы равна макс. длине n-граммы
+                    if len(group) == length:
+                        # пишем группу в список групп
+                        groups.append(group)
+                        # и сдвигаем индексы, затирая первый элемент
+                        group = group[1:]
+                # по итогу добавляем найденные группы в общий список
+                ngrams[length].extend(groups)
 
-        wordsList.extend(unograms)
-        wordsList.extend(bigrams)
-        wordsList.extend(trigrams)
+        return ngrams
 
-        return {'ngrams': wordsList, 'unograms': unograms, 'bigrams': bigrams, 'trigrams': trigrams}
+    def __countWordsDocumentFrequency(self, groupsToCount, groupsByTexts):
+        """
+        расчёт частот встречаемости групп слов (n-грам) в группах слов текста
+        :param groupsToCount: список n-грам
+        :type groupsToCount: list
+        :param groupsByTexts: список групп слов, сгруппированных по текстам
+        :type groupsByTexts: list
+        :return: словарь с перечислением элементов n-граммы и частот их встречаемости
+        :rtype: dict
+        """
+        result = list()
 
-    def __countWordsDocumentFrequency(self):
-        return 0
+        # перебираем список групп, частоты которых нужно посчитать
+        for groupIndex, groupToCount in enumerate(groupsToCount):
+            # берём первое слово группы
+            wordToFind = groupToCount[0]
+            freqByGroups = list()
+            # и затем ищем то же слово во всех текстах
+            for groups in groupsByTexts:
+                freq = 0
+                # перебираем группы текущего текста
+                for group in groups:
+                    # в группе перебираем слова
+                    for i, word in enumerate(group):
+                        # если текущее слово совпало с первым
+                        if word['text'] == wordToFind['text']:
+                            found = True
+                            # проверяем последующие слова проверяемой группы
+                            for j, wordToCheck in enumerate(groupToCount[1:]):
+                                # поскольку индексы начинаются с нуля, а по факту должны с единицы (ведь проверяем не
+                                # первое, а последующие слова), увеличиваем индекс
+                                j = j+1
+                                # проверяем, кончается ли проверяемая группа раньше
+                                # и, если нет, проверяем, не различаются ли слова групп
+                                if (i+j) >= len(group) or group[i+j]['text'] != groupToCount[j]['text']:
+                                    # и, если это так, бракуем текущую проверку
+                                    found = False
+                                    break
 
-    def __filterWordsByFrequency(self):
+                            # если все слова блока нашлись, увеличиваем счётчик находок
+                            if found:
+                                freq = freq + 1
+
+                # по окончании проверки всех групп текста записываем частоту вхождений проверяемой группы в
+                # проверенный текст
+                freqByGroups.append(freq)
+
+            # и после перебора всех текстов формируем массив с результатом проверки, эл-ты n-граммы записываем по
+            # ссылке чтобы не тратить память
+            result.append({'items': groupsToCount[groupIndex], 'freqByGroups': freqByGroups,
+                           'totalFreq': sum(freqByGroups)})
+
+        return result
+
+    def __filterNGramsByFrequency(self, ngramsByTexts):
+        for ngramsByLengths in ngramsByTexts:
+            for k in ngramsByLengths:
+                for ngram in ngramsByLengths[k]:
+                    q=1
         return 0
 
     def __buildWordsPOSList(self):
@@ -77,18 +186,3 @@ class nGramsFeaturesBuilder:
 
     def __filterWordsByEntropy(self):
         return 0
-
-    class Word:
-        def __init__(self, text):
-            self.text = text
-
-    class Message:
-        def __init__(self, words, messageClass):
-            self.words = []
-            self.wordsRaw = []
-            self.messageClass = messageClass
-            for word in words:
-                wordObj = nGramsFeaturesBuilder.Word(word)
-                self.words.append(wordObj)
-                self.wordsRaw.append(word)
-

@@ -95,7 +95,7 @@ class semanticFeatures:
         """
         проверка на наличие в тексте смайликов и эмодзи
         :param message: текст сообщения
-        :type message: list
+        :type message: string
         :param lemmas: список лемм слов текста
         :type lemmas: list
         :return: результат проверки в виде числа (0 или 1)
