@@ -98,6 +98,9 @@ class nGramsFeaturesBuilder:
                 group = list()
                 # перебираем слова в группе
                 for word in wordsGroup:
+                    # хак - пропускаем предлоги в качестве n-граммы длины 1
+                    if length == 1 and (word['type'] != 'word' or ('POS' in word.keys() and word['POS'] == 'PR')):
+                        continue
                     # добавляем слово в группу
                     group.append(word)
                     # и, если длина группы равна макс. длине n-граммы
@@ -127,7 +130,11 @@ class nGramsFeaturesBuilder:
         for groupIndex, groupToCount in enumerate(groupsToCount):
             # берём первое слово группы
             wordToFind = groupToCount[0]
+            # и пропускаем его, если оно - имя собственное
+            if 'isPersonal' in wordToFind.keys() and wordToFind['isPersonal']:
+                continue
             freqByGroups = list()
+            inMessages = 0
             # и затем ищем то же слово во всех текстах
             for groups in groupsByTexts:
                 freq = 0
@@ -150,6 +157,11 @@ class nGramsFeaturesBuilder:
                                     found = False
                                     break
 
+                                # также бракуем её для имён собственных
+                                if 'isPersonal' in wordToFind.keys() and wordToFind['isPersonal']:
+                                    found = False
+                                    break
+
                             # если все слова блока нашлись, увеличиваем счётчик находок
                             if found:
                                 freq = freq + 1
@@ -157,20 +169,25 @@ class nGramsFeaturesBuilder:
                 # по окончании проверки всех групп текста записываем частоту вхождений проверяемой группы в
                 # проверенный текст
                 freqByGroups.append(freq)
+                if freq > 0:
+                    inMessages = inMessages + 1
 
             # и после перебора всех текстов формируем массив с результатом проверки, эл-ты n-граммы записываем по
             # ссылке чтобы не тратить память
             result.append({'items': groupsToCount[groupIndex], 'freqByGroups': freqByGroups,
-                           'totalFreq': sum(freqByGroups)})
+                           'inMessages': inMessages, })
 
         return result
 
-    def __filterNGramsByFrequency(self, ngramsByTexts):
-        for ngramsByLengths in ngramsByTexts:
-            for k in ngramsByLengths:
-                for ngram in ngramsByLengths[k]:
-                    q=1
-        return 0
+    def __filterNGramsByFrequency(self, ngramsByTexts, inMessagesThreshold=2, minFreqThreshold=3):
+        ngrams = list()
+        for i, ngramsByLengths in enumerate(ngramsByTexts):
+            for j in ngramsByLengths:
+                for k, ngram in enumerate(ngramsByLengths[j]):
+                    if ngram['inMessages'] < inMessagesThreshold or sum(ngram['freqByGroups']) < minFreqThreshold:
+                        continue
+                    ngrams.append(ngram)
+        return ngrams
 
     def __buildWordsPOSList(self):
         return 0

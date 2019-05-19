@@ -33,17 +33,13 @@ def analyzeText(text, caching=True):
     :rtype: tuple
     """
     result = None
-
+    textHash = None
     # если кеширование включено
     if caching:
         # строим хеш
-        hash = hashlib.md5(text.encode("utf-8")).hexdigest()
-        hash = hash + hashlib.sha1(text.encode("utf-8")).hexdigest()
-
+        textHash = cachingWorker.generateIdentifier(text)
         # пытаемся читать
-        rawResult = cachingWorker.readByte(hash)
-        if rawResult is not None:
-            result = pickle.loads(rawResult)
+        result = cachingWorker.readVar(textHash)
 
     # если ничего не прочитано, получаем данные обычным способом
     if result is None:
@@ -52,8 +48,9 @@ def analyzeText(text, caching=True):
     # и, если включено кеширование,
     if caching:
         # сохраняем данные
-        rawResult = pickle.dumps(result)
-        cachingWorker.saveByte(hash, rawResult)
+        if textHash is None:
+            textHash = cachingWorker.generateIdentifier(text)
+        cachingWorker.saveVar(textHash, result)
 
     return result
 
@@ -93,6 +90,7 @@ def __mystemWrapper(text):
 
             # затем признак обсценности
             isObscene = "обсц" in rawAnalytic['analysis'][0]['gr']
+            isPersonal = "имя" in rawAnalytic['analysis'][0]['gr']
 
             # затем лемму
             lemma = rawAnalytic['analysis'][0]['lex']
@@ -102,7 +100,8 @@ def __mystemWrapper(text):
                 'POS': POS,
                 'text': lemma,
                 'rawText': rawAnalytic['text'],
-                'isObscene': isObscene
+                'isObscene': isObscene,
+                'isPersonal': isPersonal
             }
 
             # для глаголов расширяем его другими признаками

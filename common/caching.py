@@ -1,7 +1,16 @@
 import redis
+import pickle
+import hashlib
 
 pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
 r = redis.Redis(connection_pool=pool)
+
+
+def generateIdentifier(text, strict=False):
+    hash = hashlib.md5(text.encode("utf-8")).hexdigest()
+    if strict:
+        hash = hash + hashlib.sha1(text.encode("utf-8")).hexdigest()
+    return hash
 
 def save(name, value):
     """
@@ -58,4 +67,17 @@ def readByte(name):
             result = result
     except redis.exceptions.ConnectionError:
         result = None
+    return result
+
+
+def saveVar(name, value):
+    rawValue = pickle.dumps(value)
+    return saveByte(name, rawValue)
+
+
+def readVar(name):
+    result = None
+    rawResult = readByte(name)
+    if rawResult is not None:
+        result = pickle.loads(rawResult)
     return result

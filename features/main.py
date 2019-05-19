@@ -2,30 +2,71 @@ from .nGramsFeaturesBuilder import nGramsFeaturesBuilder
 from .lexicFeatures import lexicFeatures
 from .semanticFeatures import semanticFeatures
 from common import textPreps
+from common import caching
+import hashlib
 
 
 class featuresExtractor:
-    def __init__(self, trainMessages, trainClasses):
+    def __init__(self):
         """
-        инициализация объекта - получение данных анализа по входным сообщениям
+        инициализация объекта
+        """
+        self.lf = lexicFeatures()
+        self.sf = semanticFeatures()
+
+    def isTrainingRequired(self, testsHash):
+        """
+        возвращает результат проверки наличия кеша результата расчёта n-грам с указанным идентификатором
+        :param testsHash: идентификатор
+        :type testsHash: string
+        :return: результат проверки
+        :rtype: bool
+        """
+        ngrams = caching.readVar(testsHash)
+        if ngrams is not None:
+            self.ngrams = ngrams
+            return False
+        return True
+
+    def trainNGrams(self, trainMessages, trainClasses, cache=True, testsHash=None):
+        """
+        построение списка n-грам по размеченным сообщениям
         :param trainMessages: сообщения обучающей выборки
         :type trainMessages: list
         :param trainClasses: классы сообщений обучающей выборки
         :type trainClasses: list
+        :param cache: флаг необходимости кеширования результата расчётов
+        :type cache: bool
+        :param testsHash: идентификатор искомого результата, может быть пустым
+        :type testsHash: string
+        :return: идентификатор сохранённого результата
+        :rtype: string
         """
-        trainMessagesAnalytics = list()
-        # для каждого сообщения из обучающей выборки
-        for trainMessage in trainMessages:
-            # получаем данные аналитики
-            textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage, caching=True)
-            trainMessagesAnalytics.append(textAnalytic)
-        # и затем строим список n-грам
-        obj = nGramsFeaturesBuilder(trainMessagesAnalytics, trainClasses)
-        self.ngrams = obj.getNGramsList()
+        ngrams = None
+        if cache:
+            if testsHash is None:
+                testsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
+            ngrams = caching.readVar(testsHash)
 
-        self.lf = lexicFeatures()
-        self.sf = semanticFeatures()
-        q = semanticFeatures()
+        if ngrams is None:
+            trainMessagesAnalytics = list()
+            # для каждого сообщения из обучающей выборки
+            for trainMessage in trainMessages:
+                # получаем данные аналитики
+                textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
+                trainMessagesAnalytics.append(textAnalytic)
+            # и затем строим список n-грам
+            obj = nGramsFeaturesBuilder(trainMessagesAnalytics, trainClasses)
+            ngrams = obj.getNGramsList()
+
+        if cache:
+            if testsHash is None:
+                testsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
+            caching.saveVar(testsHash, ngrams)
+
+        self.ngrams = ngrams
+
+        return testsHash
 
     def getFeaturesVector(self, message):
         """
