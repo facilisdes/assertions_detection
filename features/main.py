@@ -13,6 +13,7 @@ class featuresExtractor:
         """
         self.lf = lexicFeatures()
         self.sf = semanticFeatures()
+        self.ngrams = None
 
     def isTrainingRequired(self, testsHash):
         """
