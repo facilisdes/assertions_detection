@@ -1,7 +1,5 @@
 from pymystem3 import Mystem
 from common import caching as cachingWorker
-import pickle
-import hashlib
 import re
 
 
@@ -9,9 +7,9 @@ def prepareText(text):
     """
     очистка текста
     :param text: текст для обработки
-    :type text: string
+    :type text: str
     :return: обработанный текст
-    :rtype: string
+    :rtype: str
     """
     # первый шаг - удаление текстов в скобках
     text = __removeBrackets(text)
@@ -23,7 +21,7 @@ def analyzeText(text, caching=True):
     """
     разбор и анализ слов текста
     :param text: текст для разбора
-    :type text: string
+    :type text: str
     :param caching: кешировать ли результат разбор
     :type caching: bool
     :return:
@@ -59,7 +57,7 @@ def __mystemWrapper(text):
     """
     обёртка для разбора текста через mystem
     :param text: текст для разбора
-    :type text: string
+    :type text: str
     :return:
         - textAnalytics - данные по анализу всего текста (слова плюс другие символы)
         - wordsAnalytics - данные по анализу слов текста
@@ -159,9 +157,9 @@ def __removeBrackets(text):
     """
     удаление текстов в скобках
     :param text: текст для очистки
-    :type text: string
+    :type text: str
     :return: очищенный текст
-    :rtype: string
+    :rtype: str
     """
     openingTags = ['\"', '\'', '(', '[']
     closingTags = ['\"', '\'', ')', ']']

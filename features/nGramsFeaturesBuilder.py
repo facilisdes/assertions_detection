@@ -1,31 +1,39 @@
-from common.debug import *
 import math
+
 
 class nGramsFeaturesBuilder:
     @staticmethod
-    def train(self, analyticsList, classesList):
+    def train(analyticsList, classesList):
         """
-        процесс обучения - эмпирического определения n-грам по размеченным текстам
-        :return:
-        :rtype:
+        поиск n-грамм по размеченным текстам
+        :param analyticsList: список текстов
+        :type analyticsList: list
+        :param classesList: список классов текстов
+        :type classesList: list
+        :return: список n-грам
+        :rtype: list
         """
         groupsList = list()
         flatGroupsList = list()
-        candidatesGroupsList = list()
 
+        # определяем список групп слов
         for analytic in analyticsList:
-            wordsGroup = self.__buildWordsGroups(analytic)
+            wordsGroup = nGramsFeaturesBuilder.__buildWordsGroups(analytic)
             groupsList.append(wordsGroup)
             flatGroupsList.extend(wordsGroup)
 
-        ngramsCandidates = self.__buildRawNGrams(flatGroupsList, 3)
+        # определяем список кандидатов в n-граммы - группы слов ограниченной длины
+        ngramsCandidates = nGramsFeaturesBuilder.__buildRawNGrams(flatGroupsList, 3)
 
         # модифицируем группы, прописывая в них частоты
-        ngramsCandidates = self.__countWordsDocumentFrequency(ngramsCandidates, groupsList)
+        nGramsFeaturesBuilder.__calculateWordsDocumentFrequency(ngramsCandidates, groupsList)
+        # фильтруем группы по частотам
+        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=2, minFreqThreshold=3)
 
-        filteredCandidates = self.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=2, minFreqThreshold=3)
-        self.__calculateNGramsEntropy(filteredCandidates, classesList)
-        filteredCandidates = self.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.45)
+        # vодифицируем группы, прописывая в них энтропии
+        nGramsFeaturesBuilder.__calculateNGramsEntropy(filteredCandidates, classesList)
+        # фильтруем группы по энтропии
+        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.45)
 
         return filteredCandidates
 
@@ -62,11 +70,7 @@ class nGramsFeaturesBuilder:
         return wordsBlocks
 
     @staticmethod
-    def getNGramsList(self):
-        return ['a', 'b']
-
-    @staticmethod
-    def __buildRawNGrams(self, wordsGroups, maxLength):
+    def __buildRawNGrams(wordsGroups, maxLength):
         """
         поиск "сырых" n-грамм в группах слов текста
         :param wordsGroups: список разделяемых пробелами групп слов
@@ -89,7 +93,8 @@ class nGramsFeaturesBuilder:
                 # перебираем слова в группе
                 for word in wordsGroup:
                     # хак - пропускаем предлоги и другие служебные части речи в качестве n-граммы длины 1
-                    if length == 1 and (word['type'] != 'word' or ('POS' in word.keys() and word['POS'] in ignoredPOSes)):
+                    if length == 1 and (word['type'] != 'word' or
+                                        ('POS' in word.keys() and word['POS'] in ignoredPOSes)):
                         continue
                     # добавляем слово в группу
                     group.append(word)
@@ -100,7 +105,7 @@ class nGramsFeaturesBuilder:
                         # и, если группа уникальна
                         if groupTextRepresentation not in ngramsWords:
                             # пишем группу в список групп и в список текстовых представлений групп
-                            groups.append(group)
+                            groups.append({'items': group})
                             ngramsWords.append(groupTextRepresentation)
                         # затем сдвигаем индексы, затирая первый элемент группы
                         group = group[1:]
@@ -110,26 +115,22 @@ class nGramsFeaturesBuilder:
         return ngrams
 
     @staticmethod
-    def __countWordsDocumentFrequency(self, groupsToCount, groupsByTexts):
+    def __calculateWordsDocumentFrequency(groupsToCount, groupsByTexts):
         """
         расчёт частот встречаемости групп слов (n-грам) в группах слов текста
         :param groupsToCount: список n-грам
         :type groupsToCount: list
         :param groupsByTexts: список групп слов, сгруппированных по текстам
         :type groupsByTexts: list
-        :return: словарь с перечислением элементов n-граммы и частот их встречаемости
-        :rtype: list
         """
-        result = list()
-
         # перебираем список групп, частоты которых нужно посчитать
         for groupIndex, groupToCount in enumerate(groupsToCount):
             # берём первое слово группы
-            wordToFind = groupToCount[0]
+            wordToFind = groupToCount['items'][0]
             # и пропускаем его, если оно - имя собственное
             if 'isPersonal' in wordToFind.keys() and wordToFind['isPersonal']:
                 continue
-            freqByGroups = list()
+            freqByTexts = list()
             inMessages = 0
             # и затем ищем то же слово во всех текстах
             for groups in groupsByTexts:
@@ -142,13 +143,13 @@ class nGramsFeaturesBuilder:
                         if word['text'] == wordToFind['text']:
                             found = True
                             # проверяем последующие слова проверяемой группы
-                            for j, wordToCheck in enumerate(groupToCount[1:]):
+                            for j, wordToCheck in enumerate(groupToCount['items'][1:]):
                                 # поскольку индексы начинаются с нуля, а по факту должны с единицы (ведь проверяем не
                                 # первое, а последующие слова), увеличиваем индекс
                                 j = j+1
                                 # проверяем, кончается ли проверяемая группа раньше
                                 # и, если нет, проверяем, не различаются ли слова групп
-                                if (i+j) >= len(group) or group[i+j]['text'] != groupToCount[j]['text']:
+                                if (i+j) >= len(group) or group[i+j]['text'] != groupToCount['items'][j]['text']:
                                     # и, если это так, бракуем текущую проверку
                                     found = False
                                     break
@@ -164,47 +165,67 @@ class nGramsFeaturesBuilder:
 
                 # по окончании проверки всех групп текста записываем частоту вхождений проверяемой группы в
                 # проверенный текст
-                freqByGroups.append(freq)
+                freqByTexts.append(freq)
                 if freq > 0:
                     inMessages = inMessages + 1
 
             # и после перебора всех текстов формируем массив с результатом проверки, эл-ты n-граммы записываем по
             # ссылке чтобы не тратить память
-            result.append({'items': groupsToCount[groupIndex], 'freqByGroups': freqByGroups,
-                           'totalFreq': sum(freqByGroups), 'inMessages': inMessages, })
-
-        return result
-
-    @staticmethod
-    def __filterNGramsByFrequency(self, ngramsList, inMessagesThreshold=2, minFreqThreshold=3):
-        filteredNGrams = list()
-        for ngram in ngramsList:
-            if ngram['inMessages'] < inMessagesThreshold or ngram['totalFreq'] < minFreqThreshold:
-                continue
-            filteredNGrams.append(ngram)
-        return filteredNGrams
+            groupToCount['freqByTexts'] = freqByTexts
+            groupToCount['totalFreq'] = sum(freqByTexts)
+            groupToCount['inMessages'] = inMessages
 
     @staticmethod
-    def __filterNGramsByEntropy(self, ngramsList, entropyThreshold=0.2):
+    def __filterNGramsByFrequency(ngramsList, inMessagesThreshold=2, minFreqThreshold=3):
+        """
+        фильтрация списка n-грам по документным частотам и частотам встречаемости в текстах
+        :param ngramsList: список n-грам для фильтрации
+        :type ngramsList: list()
+        :param inMessagesThreshold: минимальное количество текстов, в которых должна встречаться n-грамма
+        :type inMessagesThreshold: int
+        :param minFreqThreshold: минимальное количество включений n-граммы в тексты
+        :type minFreqThreshold: int
+        :return: отфильтрованный список n-грам
+        :rtype: list
+        """
         filteredNGrams = list()
+        # перебираем все n-граммы
         for ngram in ngramsList:
-            if ngram['normalizedEntropy'] < entropyThreshold:
+            if ngram['inMessages'] >= inMessagesThreshold and ngram['totalFreq'] >= minFreqThreshold:
+                # и сохраняем только соответствующие требованиям
                 filteredNGrams.append(ngram)
         return filteredNGrams
 
     @staticmethod
-    def __calculateNGramsEntropy(self, ngramsList, classes):
-        messagesInClasses = dict()
-
-        # формируем список сообщений в каждом классе
-        for i, textClass in enumerate(classes):
-            if textClass not in messagesInClasses.keys():
-                messagesInClasses[textClass] = list()
-            messagesInClasses[textClass].append(classes[i])
-
+    def __filterNGramsByEntropy(ngramsList, entropyThreshold=0.2):
+        """
+        фильтрация списка n-грам по суммарной энтропии
+        :param ngramsList: список n-грам для фильтрации
+        :type ngramsList: list
+        :param entropyThreshold: максимальная суммарная энтропия распределения n-граммы
+        :type entropyThreshold: float
+        :return: отфильтрованный список n-грам
+        :rtype: list
+        """
+        filteredNGrams = list()
         # перебираем все n-граммы
         for ngram in ngramsList:
-            ngramEntropyByClass = dict()
+            if ngram['normalizedEntropy'] <= entropyThreshold:
+                # и сохраняем только соответствующие требованиям
+                filteredNGrams.append(ngram)
+        return filteredNGrams
+
+    @staticmethod
+    def __calculateNGramsEntropy(ngramsList, classes):
+        """
+        расчёт энтропии распределения n-грам по текстам разных классов для списка n-грам
+        :param ngramsList: изменяемый список n-грам
+        :type ngramsList: list
+        :param classes: список классов каждого текста
+        :type classes: list
+        """
+        # перебираем все n-граммы
+        for ngram in ngramsList:
             countOfMessagesInClasses = dict()
             freqByClasses = dict()
 
@@ -212,13 +233,14 @@ class nGramsFeaturesBuilder:
             for i, textClass in enumerate(classes):
                 # и считаем, в скольки сообщениях каждого класса встречается эта n-грамма (документная частотоа),
                 # а также частоту включений n-граммы в сообщения каждого класса
-                isInMessage = 1 if ngram['freqByGroups'][i] > 0 else 0
+                isInMessage = 1 if ngram['freqByTexts'][i] > 0 else 0
+
                 if textClass in countOfMessagesInClasses.keys():
                     countOfMessagesInClasses[textClass] = countOfMessagesInClasses[textClass] + isInMessage
-                    freqByClasses[textClass] = freqByClasses[textClass] + ngram['freqByGroups'][i]
+                    freqByClasses[textClass] = freqByClasses[textClass] + ngram['freqByTexts'][i]
                 else:
                     countOfMessagesInClasses[textClass] = isInMessage
-                    freqByClasses[textClass] = ngram['freqByGroups'][i]
+                    freqByClasses[textClass] = ngram['freqByTexts'][i]
 
             # записываем количество сообщений класса, в которых встречается эта n-грамма
             ngram['freqOfMessagesInClasses'] = countOfMessagesInClasses
@@ -231,18 +253,21 @@ class nGramsFeaturesBuilder:
                 # если n-грамма встречалась в сообщениях класса хоть раз,
                 if countOfMessagesInClasses[textClass] > 0 and ngram['inMessages'] > 0:
                     # то считаем вероятность того, что в конкретном сообщении встретится текущая n-грамма
+
                     # то есть делим число сообщений, в которых есть n-грамма, на общее число сообщений
                     # p = countOfMessagesInClasses[textClass] / ngram['inMessages']
+
+                    # то есть делим число включений n-граммы в сообщения этого класса на общее число включений
                     p = freqByClasses[textClass] / ngram['totalFreq']
+
                     # затем находим энтропию
                     entropy = -1 * p * math.log(p, 2)
-                    ngramEntropyByClass[textClass] = entropy
+
                     # и суммарную энтропию по всем классам
                     sumEntropy = sumEntropy + entropy
-                else:
-                    # если n-грамма не встретилась в сообщениях класса ни разу, то и энтропия равна нулю
-                    ngramEntropyByClass[textClass] = 0
 
             # по окончании проверки всех классов нормализуем суммарную энтропию - делим её на общее количество сообщений
             normalizedEntropy = sumEntropy / math.log(len(classes), math.e)
+
+            # и записываем её в n-грамму
             ngram['normalizedEntropy'] = normalizedEntropy

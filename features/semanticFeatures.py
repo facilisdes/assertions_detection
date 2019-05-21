@@ -7,7 +7,8 @@ class semanticFeatures:
     def __init__(self, speechActVerbsList=False, opinionWordsList=False, smilesList=False, vulgarWordsList=False):
         """
         инициализация - чтение данных из файлов
-        :param speechActVerbsList: (опционально) путь к .csv-файлу со словарём глаголов, соответствующих опред. речевым актам
+        :param speechActVerbsList: (опционально) путь к .csv-файлу со словарём глаголов,
+            соответствующих опред. речевым актам
         :type speechActVerbsList: string
         :param opinionWordsList: (опционально) путь к .csv-файлу со словарём слов с яркой эмоциональной окраской
         :type opinionWordsList: string
@@ -149,8 +150,7 @@ class semanticFeatures:
             for index, verbFeature in enumerate(verbFeatures):
                 if ('verbsCharacteristics' in word and
                         verbFeature in word['verbsCharacteristics'] and
-                        word['verbsCharacteristics'][verbFeature]
-                ):
+                        word['verbsCharacteristics'][verbFeature]):
                     POSVector[index] = 1
 
         vector.extend(POSVector)

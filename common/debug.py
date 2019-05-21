@@ -2,6 +2,7 @@ import functools
 import time
 # from common.debug import *
 
+
 def execTimer(func):
     """Print the runtime of the decorated function"""
     @functools.wraps(func)

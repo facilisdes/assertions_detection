@@ -19,7 +19,7 @@ class featuresExtractor:
         """
         возвращает результат проверки наличия кеша результата расчёта n-грам с указанным идентификатором
         :param testsHash: идентификатор
-        :type testsHash: string
+        :type testsHash: str
         :return: результат проверки
         :rtype: bool
         """
@@ -39,15 +39,18 @@ class featuresExtractor:
         :param cache: флаг необходимости кеширования результата расчётов
         :type cache: bool
         :param testsHash: идентификатор искомого результата, может быть пустым
-        :type testsHash: string
+        :type testsHash: str
         :return: идентификатор сохранённого результата
-        :rtype: string
+        :rtype: str
         """
         ngrams = None
+        loadedFromCache = False
         if cache:
+            # если кеширование включено, получаем хеш сообщений и пытаемся выгрузить n-граммы
             if testsHash is None:
                 testsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
             ngrams = caching.readVar(testsHash)
+            loadedFromCache = True
 
         if ngrams is None:
             trainMessagesAnalytics = list()
@@ -57,10 +60,10 @@ class featuresExtractor:
                 textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
                 trainMessagesAnalytics.append(textAnalytic)
             # и затем строим список n-грам
-            obj = nGramsFeaturesBuilder(trainMessagesAnalytics, trainClasses)
-            ngrams = obj.getNGramsList()
+            ngrams = nGramsFeaturesBuilder.train(trainMessagesAnalytics, trainClasses)
 
-        if cache:
+        if cache and not loadedFromCache:
+            # если кеширование включено, записываем результат построения в кеш
             if testsHash is None:
                 testsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
             caching.saveVar(testsHash, ngrams)
@@ -73,7 +76,7 @@ class featuresExtractor:
         """
         построение вектора значений признаков для сообщения
         :param message: текст анализируемого сообщения
-        :type message: string
+        :type message: str
         :return: вектор признаков данного сообщения
         :rtype: list
         """
@@ -113,7 +116,7 @@ class featuresExtractor:
         """
         построение вектора значений по семантическим признакам
         :param message: текст сообщения
-        :type message: string
+        :type message: str
         :param lemmas: список лемм сообщения
         :type lemmas: list
         :param analysis: данные слов сообщения
@@ -132,7 +135,7 @@ class featuresExtractor:
         """
         построение вектора значений по лексическим признакам
         :param message: текст сообщения
-        :type message: string
+        :type message: str
         :param lemmas: список лемм сообщения
         :type lemmas: list
         :param analysis: данные слов сообщения

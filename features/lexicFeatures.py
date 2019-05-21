@@ -7,7 +7,7 @@ class lexicFeatures:
         """
         инициализация объекта
         :param abbreviationsFile: (опционально) путь к файлу с сокращениями
-        :type abbreviationsFile: string
+        :type abbreviationsFile: str
         """
         curDir = os.path.dirname(__file__)
         abbreviationsFile = os.path.join(curDir, abbreviationsFile)
@@ -21,7 +21,7 @@ class lexicFeatures:
         """
         проверка на наличие определенных знаков пунктуации в тексте сообщения
         :param message: текст сообщения
-        :type message: string
+        :type message: str
         :return: результат проверки в виде массива
         :rtype: list
         """
@@ -38,7 +38,7 @@ class lexicFeatures:
         """
         проверка на наличие twitter-специфичных символов в тексте сообщения, а также их нахождения в начале сообщения
         :param message: текст сообщения
-        :type message: string
+        :type message: str
         :return: результат проверки в виде массива
         :rtype: list
         """
