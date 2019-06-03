@@ -5,7 +5,7 @@ import yaml
 curDir = os.path.dirname(__file__)
 creds = os.path.join(curDir, "../data/twitter_keys.yaml")
 with open(os.path.expanduser(creds)) as f:
-    params = yaml.load(f)['search_tweets_api']
+    params = yaml.load(f, Loader=yaml.BaseLoader)['search_tweets_api']
 api = twitter.Api(**params)
 
 

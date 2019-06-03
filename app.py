@@ -3,6 +3,7 @@ from sklearn import svm
 import os
 import csv
 import hashlib
+import classification.main
 
 from features.main import featuresExtractor
 import common.twitter as tw
@@ -74,7 +75,7 @@ for index, message in enumerate(messages):
     cleanMessage = textPreps.prepareText(message)
     featuresVector = fe.getFeaturesVector(cleanMessage)
     features.append(featuresVector)
-    dec = lin_clf.decision_function(featuresVector)
-    messageClass = dec.shape[1]
-    classes.append(messageClass)
 
+messageClasses = lin_clf.predict(features)
+
+q=1

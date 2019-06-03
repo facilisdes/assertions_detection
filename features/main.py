@@ -4,7 +4,7 @@ from .semanticFeatures import semanticFeatures
 from common import textPreps
 from common import caching
 import hashlib
-
+from common.debug import *
 
 class featuresExtractor:
     def __init__(self):
@@ -109,8 +109,42 @@ class featuresExtractor:
         :rtype: list
         """
         # для каждой n-граммы - если она есть в списке лемм, то признак равен 1, иначе 0
-        vector = [1 if ngram in lemmas else 0 for i, ngram in enumerate(self.ngrams)]
-        return vector
+        result = [0] * len(self.ngrams)
+
+        # перебираем все слова текста
+        for currentLemmaIndex, lemma in enumerate(lemmas):
+            # для каждого слова перебираем все n-граммы
+            for currentNgramIndex, ngram in enumerate(self.ngrams):
+                # если текущая n-грамма уже была найдена, пропускаем
+                if result[currentNgramIndex] != 0:
+                    continue
+
+                # если текущее слово равно первому слову n-граммы
+                if ngram['items'][0]['text'] == lemma:
+                    # считаем, что n-грамма найдена
+                    isNgramFound = True
+
+                    # и перебираем все следующие слова n-граммы
+                    for ngramItemIndex, ngramItem in enumerate(ngram['items'][1:]):
+                        try:
+                            # пытаемся сравнить следующее слово текста и следующее слово n-граммы
+                            if lemmas[currentLemmaIndex+ngramItemIndex+1] != ngram['items'][ngramItemIndex+1]['text']:
+                                # если они не совпадают, считаем, что поиск не удался, и прекращаем проверку
+                                # следующих слов n-граммы
+                                isNgramFound = False
+                                break
+
+                        except IndexError:
+                            # если следующего слова текста нет, считаем, что поиск не удался
+                            isNgramFound = False
+                            break
+
+                    if isNgramFound:
+                        # и, если поиск удался, меняем метку в результирующем векторе
+                        result[currentNgramIndex] = 1
+
+        # возвращаем результирующий вектор
+        return result
 
     def __getSemanticFeatures(self, message, lemmas, analysis):
         """
