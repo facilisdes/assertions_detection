@@ -39,7 +39,7 @@ class nGramsFeaturesBuilder:
         # vодифицируем группы, прописывая в них энтропии
         nGramsFeaturesBuilder.__calculateNGramsEntropy(filteredCandidates, classesList)
         # фильтруем группы по энтропии
-        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.12)
+        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.15)
 
         return filteredCandidates
 
@@ -87,7 +87,7 @@ class nGramsFeaturesBuilder:
         :rtype: list
         """
         ngrams = list()
-        ignoredPOSes = ["CONJ", "PR", "INTJ", "NUM", "PART", "P", "S", "SPRO", "APRO", "ADVPRO"]
+        ignoredPOSes = ["CONJ", "PR", "INTJ", "NUM", "PART", "ADV", "P", "S", "SPRO", "APRO", "ADVPRO"]
         ngramsWords = list()
 
         # запускаем построение для каждой группы текста
@@ -231,6 +231,9 @@ class nGramsFeaturesBuilder:
         :type classes: list
         """
         logBase = 2
+        classesList = set(classes)
+        classesFreq = {className: classes.count(className) for className in classesList}
+        sumClassesFreq = sum(classesFreq.values())
         # перебираем все n-граммы
         for ngram in ngramsList:
             countOfMessagesInClasses = dict()
@@ -264,8 +267,13 @@ class nGramsFeaturesBuilder:
                     # то есть делим число сообщений, в которых есть n-грамма, на общее число сообщений
                     # p = countOfMessagesInClasses[textClass] / ngram['inMessages']
 
-                    # то есть делим число включений n-граммы в сообщения этого класса на общее число включений
-                    p = freqByClasses[textClass] / ngram['totalFreq']
+                    # то есть делим число включений n-граммы в сообщения этого класса на общее число включений,
+                    # предварительно отнормировав их
+
+                    freqByClassesNormalized = math.ceil(100 * freqByClasses[textClass] / classesFreq[textClass])
+                    totalFreqNormalized = math.ceil(100 * len(classesFreq.keys()) * ngram['totalFreq'] / sumClassesFreq)
+
+                    p = freqByClassesNormalized / totalFreqNormalized
 
                     # затем находим энтропию
                     entropy = -1 * p * math.log(p, logBase)
