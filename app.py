@@ -34,6 +34,7 @@ if fe.isTrainingRequired(textsHash):
 
 trainFeatures = caching.readVar("featuresVectors for "+textsHash)
 if trainFeatures is None:
+    trainFeatures = []
     for message in trainMessages:
         featuresVector = fe.getFeaturesVector(message)
         trainFeatures.append(featuresVector)

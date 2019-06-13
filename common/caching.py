@@ -2,7 +2,7 @@ import redis
 import pickle
 import hashlib
 
-pool = redis.ConnectionPool(host='localhost', port=6379, db=0)
+pool = redis.ConnectionPool(host='176.223.134.183', port=14890, password='vr@`~ud`b#U5{}v=~z*BANPJW>WAA-dJ!+D:5{r:sA,=[[.bWpLRQX#;Y~bp', db=0)
 r = redis.Redis(connection_pool=pool)
 
 

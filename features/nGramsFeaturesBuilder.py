@@ -1,5 +1,5 @@
 import math
-
+from common import caching
 
 class nGramsFeaturesBuilder:
     @staticmethod
@@ -16,19 +16,25 @@ class nGramsFeaturesBuilder:
         groupsList = list()
         flatGroupsList = list()
 
+        filteredCandidates = caching.readVar('qwe1')
+        if filteredCandidates is None:
         # определяем список групп слов
-        for analytic in analyticsList:
-            wordsGroup = nGramsFeaturesBuilder.__buildWordsGroups(analytic)
-            groupsList.append(wordsGroup)
-            flatGroupsList.extend(wordsGroup)
+            for analytic in analyticsList:
+                wordsGroup = nGramsFeaturesBuilder.__buildWordsGroups(analytic)
+                groupsList.append(wordsGroup)
+                flatGroupsList.extend(wordsGroup)
 
-        # определяем список кандидатов в n-граммы - группы слов ограниченной длины
-        ngramsCandidates = nGramsFeaturesBuilder.__buildRawNGrams(flatGroupsList, 3)
+            # определяем список кандидатов в n-граммы - группы слов ограниченной длины
+            ngramsCandidates = nGramsFeaturesBuilder.__buildRawNGrams(flatGroupsList, 3)
 
-        # модифицируем группы, прописывая в них частоты
-        nGramsFeaturesBuilder.__calculateWordsDocumentFrequency(ngramsCandidates, groupsList)
-        # фильтруем группы по частотам
-        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=2, minFreqThreshold=3)
+            # модифицируем группы, прописывая в них частоты
+            nGramsFeaturesBuilder.__calculateWordsDocumentFrequency(ngramsCandidates, groupsList)
+            # фильтруем группы по частотам
+
+
+            filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=len(analyticsList)/25, minFreqThreshold=len(analyticsList)/25)
+
+            caching.saveVar('qwe1', ngramsCandidates)
 
         # vодифицируем группы, прописывая в них энтропии
         nGramsFeaturesBuilder.__calculateNGramsEntropy(filteredCandidates, classesList)
@@ -81,7 +87,7 @@ class nGramsFeaturesBuilder:
         :rtype: list
         """
         ngrams = list()
-        ignoredPOSes = ["CONJ", "PR", "INTJ", "NUM", "PART"]
+        ignoredPOSes = ["CONJ", "PR", "INTJ", "NUM", "PART", "P", "S", "SPRO", "APRO", "ADVPRO"]
         ngramsWords = list()
 
         # запускаем построение для каждой группы текста
@@ -191,7 +197,7 @@ class nGramsFeaturesBuilder:
         filteredNGrams = list()
         # перебираем все n-граммы
         for ngram in ngramsList:
-            if ngram['inMessages'] is not None and ngram['inMessages'] >= inMessagesThreshold and ngram['totalFreq'] >= minFreqThreshold:
+            if "inMessages" in ngram.keys() is not None and ngram['inMessages'] >= inMessagesThreshold and ngram['totalFreq'] >= minFreqThreshold:
                 # и сохраняем только соответствующие требованиям
                 filteredNGrams.append(ngram)
         return filteredNGrams
@@ -261,13 +267,14 @@ class nGramsFeaturesBuilder:
                     p = freqByClasses[textClass] / ngram['totalFreq']
 
                     # затем находим энтропию
-                    entropy = -1 * p * math.log(p, 2)
+                    base = 2
+                    entropy = -1 * p * math.log(p, base)
 
                     # и суммарную энтропию по всем классам
                     sumEntropy = sumEntropy + entropy
 
             # по окончании проверки всех классов нормализуем суммарную энтропию - делим её на общее количество сообщений
-            normalizedEntropy = sumEntropy / math.log(len(classes), math.e)
+            normalizedEntropy = sumEntropy /len(classes)
 
             # и записываем её в n-грамму
             ngram['normalizedEntropy'] = normalizedEntropy

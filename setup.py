@@ -9,5 +9,5 @@ setup(
     author='facilisdes',
     author_email='facilisdes@gmail.com',
     description='',
-    install_requires=['redis', 'emoji', 'pymystem3', 'PyYAML', 'scikit-learn'],
+    install_requires=['redis', 'emoji', 'pymystem3', 'PyYAML', 'scikit-learn', 'sklearn'],
 )

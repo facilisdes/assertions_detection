@@ -52,12 +52,17 @@ class featuresExtractor:
             loadedFromCache = True
 
         if ngrams is None:
-            trainMessagesAnalytics = list()
+            loadedFromCache = False
             # для каждого сообщения из обучающей выборки
-            for trainMessage in trainMessages:
-                # получаем данные аналитики
-                textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
-                trainMessagesAnalytics.append(textAnalytic)
+
+            trainMessagesAnalytics = caching.readVar('qwe2')
+            if trainMessagesAnalytics is None:
+                trainMessagesAnalytics = list()
+                for trainMessage in trainMessages:
+                    # получаем данные аналитики
+                    textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
+                    trainMessagesAnalytics.append(textAnalytic)
+                caching.saveVar('qwe2', trainMessagesAnalytics)
             # и затем строим список n-грам
             ngrams = nGramsFeaturesBuilder.train(trainMessagesAnalytics, trainClasses)
 
