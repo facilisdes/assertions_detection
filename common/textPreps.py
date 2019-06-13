@@ -12,7 +12,7 @@ def prepareText(text):
     :rtype: str
     """
     # первый шаг - удаление текстов в скобках
-    text = __removeBrackets(text)
+    # text = __removeBrackets(text)
 
     return text
 

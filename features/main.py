@@ -4,7 +4,6 @@ from .semanticFeatures import semanticFeatures
 from common import textPreps
 from common import caching
 import hashlib
-from common.debug import *
 
 class featuresExtractor:
     def __init__(self):
@@ -181,6 +180,5 @@ class featuresExtractor:
         vector.extend(self.lf.getAbbreviationsRatings(lemmas))
         vector.extend(self.lf.getPunctuantionRatings(message))
         vector.extend(self.lf.getPOSRatings(analysis))
-        vector.extend(self.lf.getTwitterSpecificsRatings(message))
         return vector
 

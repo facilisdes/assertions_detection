@@ -3,37 +3,52 @@ from sklearn import naive_bayes
 from sklearn import svm
 from sklearn import linear_model
 from sklearn import tree
+from sklearn import model_selection
+from sklearn import metrics
 
-class classification:
+
+class classifiers:
+    class models:
+        #https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
+        # prefer dual=False when n_samples > n_features.
+        SVM = svm.SVC()
+
+        # https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
+        NaiveBayes = naive_bayes.MultinomialNB()
+
+        #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
+        LogReg = linear_model.LogisticRegression()
+
+        #https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
+        DecTree = tree.DecisionTreeClassifier()
+
 
     def __init__(self):
 
-        # https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
-        self.nbc = naive_bayes.MultinomialNB(alpha=1.0, fit_prior=True, class_prior=None)
 
-        #https://scikit-learn.org/stable/modules/generated/sklearn.svm.LinearSVC.html
-        self.svmc = svm.LinearSVC(penalty='l2', loss='squared_hinge', dual=True, tol=0.0001, C=1.0, multi_class='ovr',
-                                  fit_intercept=True, intercept_scaling=1, class_weight=None, verbose=0,
-                                  random_state=None, max_iter=1000)
+        self.nbc = self.models.NaiveBayes
 
-        #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-        self.lrc = linear_model.LogisticRegression(penalty='l2', dual=False, tol=0.0001, C=1.0, fit_intercept=True,
-                                                   intercept_scaling=1, class_weight=None, random_state=None,
-                                                   solver='warn', max_iter=100, multi_class='warn', verbose=0,
-                                                   warm_start=False, n_jobs=None, l1_ratio=None)
+        self.svmc = self.models.SVM
 
-        #https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
-        self.dtc = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=2,
-                                              min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None,
-                                              random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0,
-                                              min_impurity_split=None, class_weight=None, presort=False)
+        self.lrc = self.models.LogReg
 
+        self.dtc = self.models.DecTree
+
+
+    def trainModel(self, model, features, classes):
+        model.fit(features, classes)
+
+    def predictModel(self, model, features):
+        result = model.predict(features)
+        #acc = accuracy_score(fact, result)
+        return result
 
     def trainSVM(self, features, classes):
         self.svmc.fit(features, classes)
 
     def predictSVM(self, features):
         result = self.svmc.predict(features)
+        # acc = accuracy_score(fact, result)
         return result
 
     def trainLogReg(self, features, classes):
@@ -41,6 +56,7 @@ class classification:
 
     def predictLogReg(self, features):
         result = self.lrc.predict(features)
+        # acc = accuracy_score(fact, result)
         return result
 
     def trainDecisionTree(self, features, classes):
@@ -48,6 +64,7 @@ class classification:
 
     def predictDecisionTree(self, features):
         result = self.dtc.predict(features)
+        # acc = accuracy_score(fact, result)
         return result
 
     def trainNaiveBayes(self, features, classes):
@@ -55,4 +72,164 @@ class classification:
 
     def predictNaiveBayes(self, features):
         result = self.nbc.predict(features)
+        # acc = accuracy_score(fact, result)
         return result
+
+    def trainModels(self, features, classes):
+        self.trainSVM(features, classes)
+        self.trainLogReg(features, classes)
+        self.trainDecisionTree(features, classes)
+        self.trainNaiveBayes(features, classes)
+
+    def predictModels(self, features):
+        result = dict()
+        for modelName in [x for x in dir(self.models) if not x.startswith('__')]:
+            model = getattr(self.models, modelName)
+            result[modelName] = self.predictModel(model, features)
+
+        return result
+
+    def saveModel(self, model, key):
+        joblib.dump(model, "/data/models/%s.pkl" % key)
+
+    def saveModels(self, key):
+        for modelName in [x for x in dir(self.models) if not x.startswith('__')]:
+            model = getattr(self.models, modelName)
+            self.saveModel(model, key + "_" + modelName)
+
+    def loadModel(self, key):
+        model = joblib.load("/data/models/%s.pkl" % key)
+        return model
+
+    def loadModels(self, key):
+        for modelName in [x for x in dir(self.models) if not x.startswith('__')]:
+            m = self.loadModel(key + "_" + modelName)
+            setattr(self.models, modelName, m)
+
+    def findBestParamsForSVM(self, features, classes):
+        # 148 variants
+        parameters = {
+            'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
+            'gamma': ['scale', 'auto'],
+            'C': [10**i for i in range(-1, 2)],
+            'class_weight': [None, "balanced"],
+            'tol': [0.1/(10**i) for i in range(1, 4)],
+        }
+
+        classifier = model_selection.GridSearchCV(self.models.SVM, parameters, n_jobs=-1, error_score=0.0)
+        classifier.fit(features, classes)
+        self.models.SVM = classifier
+
+        bestParams = {
+            'kernel': classifier.best_estimator_.kernel,
+            'gamma': classifier.best_estimator_.gamma,
+            'C': classifier.best_estimator_.C,
+            'class_weight': classifier.best_estimator_.class_weight,
+            'tol': classifier.best_estimator_.tol
+        }
+
+        return bestParams
+
+    def findBestParamsForNaiveBayes(self, features, classes):
+        # 11 variants
+        parameters = {
+            'alpha': [0.01, 0.05, 0.1, 0.5, 0.75, 1, 1.25, 2, 5, 10, 100],
+        }
+
+        classifier = model_selection.GridSearchCV(self.models.NaiveBayes, parameters, n_jobs=-1, error_score=0.0)
+        classifier.fit(features, classes)
+        self.models.NaiveBayes = classifier
+
+        bestParams = {
+            'alpha': classifier.best_estimator_.alpha,
+        }
+
+        return bestParams
+
+    def findBestParamsForLogReg(self, features, classes):
+        # 6 variants
+        parameters = {
+            'solver': ['liblinear', 'newton-cg', 'lbfgs'],
+            'class_weight': [None, "balanced"],
+        }
+
+        # penalty=l2 поскольку только он применим к используемым солверам
+        LogReg = linear_model.LogisticRegressionCV(penalty='l2', n_jobs=-1, multi_class='auto')
+        self.models.LogReg = LogReg
+
+        classifier = model_selection.GridSearchCV(self.models.LogReg, parameters, n_jobs=-1, error_score=0.0)
+        classifier.fit(features, classes)
+        self.models.LogReg = classifier
+
+        bestParams = {
+            'solver': classifier.best_estimator_.solver,
+            'class_weight': classifier.best_estimator_.class_weight,
+        }
+
+        return bestParams
+
+    def findBestParamsForDecTree(self, features, classes):
+
+        parameters = {
+            'max_depth': [None] + list(range(2,15)),
+            'min_samples_split': [i/10 for i in range(1, 9)] + list(range(1,4)),
+            'min_samples_leaf': list(range(1,3)) + [i/100 for i in range(20, 41, 5)],
+            'max_features': [None] + [i/10 for i in range(1, 10)],
+        }
+
+        DecTree = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=2,
+                                              min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None,
+                                              random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0,
+                                              min_impurity_split=None, class_weight=None, presort=False)
+
+        classifier = model_selection.GridSearchCV(self.models.DecTree, parameters, n_jobs=-1, error_score=0.0)
+        classifier.fit(features, classes)
+        self.models.DecTree = classifier
+
+        bestParams = {
+            'max_depth': classifier.best_estimator_.max_depth,
+            'min_samples_split': classifier.best_estimator_.min_samples_split,
+            'min_samples_leaf': classifier.best_estimator_.min_samples_leaf,
+            'max_features': classifier.best_estimator_.max_features,
+        }
+
+        return bestParams
+
+    def evaluateModel(self, model, features, classes, train_size=0.7):
+        XT, XF, YT, YF = model_selection.train_test_split(features, classes, train_size)
+
+        kf2 = model_selection.KFold(n_splits=5, shuffle=True, random_state=12345)
+
+
+
+
+        # https: // scikit - learn.org / stable / modules / cross_validation.html  # cross-validation
+        # https://chrisalbon.com/machine_learning/model_evaluation/cross_validation_parameter_tuning_grid_search/
+
+        # Разбивает так, что каждый элемент единожды попадает в тестовую выборку, по очереди
+        kf1 = model_selection.KFold(n_splits=5, shuffle=False, random_state=12345)
+
+        # Разбивает так, что каждый элемент единожды попадает в тестовую выборку, случайный порядок
+        kf2 = model_selection.KFold(n_splits=5, shuffle=True, random_state=12345)
+
+        # Разбивает так, что все тестовые выборки содержат примерно одинаковое количество эл-тов разных классов
+        kf3 = model_selection.StratifiedKFold(n_splits=5, shuffle=False, random_state=12345)
+
+        # Разбивает в случайном порядке, элементы могут повторяться
+        kf4 = model_selection.ShuffleSplit(n_splits=10, random_state=12345)
+
+        # Разбивает в случайном порядке, элементы могут повторяться, тестовые выборки содержат примерно одинаковое количество эл-тов разных классов
+        kf5 = model_selection.StratifiedShuffleSplit(n_splits=10, random_state=12345)
+
+        # делает N тестовых выборок, содержащих поочередно каждый элемент
+        kf6 = model_selection.LeaveOneOut()
+
+        self.trainModel(model, XT, YT)
+        YP = self.predictModel(model, XF)
+
+        acc = metrics.accuracy_score(YF, YP)
+        prec = metrics.precision_score(YF, YP)
+        rec = metrics.recall_score(YF, YP)
+        f1 = metrics.f1_score(YF, YP)
+
+        return f1, prec, rec, acc

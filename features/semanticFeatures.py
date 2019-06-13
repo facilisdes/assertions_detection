@@ -17,7 +17,6 @@ class semanticFeatures:
         :param vulgarWordsList: (опционально) путь к .csv-файлу со словарём вульгарных слов
         :type vulgarWordsList: string
         """
-
         curDir = os.path.dirname(__file__)
         # берём текущий путь и считаем пути относительно его
         if speechActVerbsList is False:
@@ -46,7 +45,7 @@ class semanticFeatures:
         with open(speechActVerbsList, 'r', encoding='utf-8-sig') as f:
             self.speechActVerbsList = [el[0] for el in csv.reader(f, delimiter=";")]
         with open(opinionWordsList, 'r', encoding='utf-8-sig') as f:
-            self.opinionWordsList = [el[0] for el in csv.reader(f, delimiter=";")]
+            self.opinionWordsList = [[el[0], el[1]] for el in csv.reader(f, delimiter=";")]
         with open(smilesList, 'r', encoding='utf-8-sig') as f:
             self.smilesList = [el[0] for el in csv.reader(f, delimiter=";")]
         with open(vulgarWordsList, 'r', encoding='utf-8-sig') as f:
@@ -54,19 +53,35 @@ class semanticFeatures:
 
     def getOpinionWordsRating(self, lemmas):
         """
-        проверка на наличие в тексте слов с яркой эмоциональной окраской
+        проверка на наличие и подсчёт в тексте слов с яркой эмоциональной окраской
         :param lemmas: список лемм сообщения
         :type lemmas: list
         :return: результат проверки в виде числа (0 или 1)
         :rtype: int
         """
-        result = 0
-        for lemma in self.opinionWordsList:
-            if lemma in lemmas:
-                result = 1
-                break
+        opinionWordsCount = 0
+        opinionWords, opinionRatings = zip(*self.opinionWordsList)
+        opinionRatingsResult = {'-2': 0, '2': 0}
 
-        return result
+        for i in range(len(opinionWords)):
+            word = opinionWords[i]
+            rating = opinionRatings[i]
+            if word in lemmas:
+                opinionWordsCount += 1
+                opinionRatingsResult[rating] += 1
+
+        # нормируем результаты
+        if opinionWordsCount > 1:
+            if opinionWordsCount < 4:
+                opinionWordsCount = 2
+            else:
+                opinionWordsCount = 3
+
+        for rating in opinionRatingsResult:
+            if opinionRatingsResult[rating] > 3:
+                opinionRatingsResult[rating] = 3
+
+        return [opinionWordsCount, opinionRatingsResult['-2'], opinionRatingsResult['2']]
 
     def getVulgarWordsRating(self, analysis, lemmas):
         """
@@ -78,16 +93,16 @@ class semanticFeatures:
         :return: результат проверки в виде числа (0 или 1)
         :rtype: int
         """
-        result = 0
+        result = False
         # проверяем каждое обсценное слово из словаря на наличие в тексте
         for vulgarWord in self.vulgarWordsList:
             if vulgarWord in lemmas:
-                result = 1
+                result = True
                 break
-        if result == 0:
+        if result == False:
             for word in analysis:
                 if word['isObscene']:
-                    result = 1
+                    result = True
                     break
 
         return result
@@ -102,19 +117,62 @@ class semanticFeatures:
         :return: результат проверки в виде числа (0 или 1)
         :rtype: int
         """
-        result = 0
+        result = [False]
         # Проверяем все смайлики из словаря на наличие в тексте сообщения. Самая лёгкая проверка в надежде исключить
         # сообщение до начала проверки по большому списку эмодзи
         for smile in self.smilesList:
             if smile in message:
-                result = 1
+                result[0] = True
                 break
         # если обычных смайликов всё же не нашлось, ищем эмодзи
-        if result == 0:
+        if result[0] == True:
             for lemma in lemmas:
                 if lemma in UNICODE_EMOJI:
-                    result = 1
+                    result[0] = True
                     break
+
+        # затем ищем скобки "((" или "))"
+        brackets = {
+            "(": {},
+            ")": {}
+        }
+        for bracket in brackets:
+            # считаем общее количество
+            brackets[bracket]['count'] = message.count(bracket)
+            # и количество "сильных", т.е. повторяющихся
+            brackets[bracket]['strongCount'] = message.count(bracket*2)
+
+            # нормируем кол-во сильных
+            if brackets[bracket]['strongCount'] > 0:
+                if brackets[bracket]['strongCount'] < 3:
+                    # на один или два знака ставим признак, равный 1
+                    brackets[bracket]['strongCount'] = 1
+                else:
+                    # на три и более ставим 2
+                    brackets[bracket]['strongCount'] = 2
+
+        # уменьшаем количество вхождений каждой скобки на количество противоположной, т.е. исключаем скобки в их
+        # нормальном использовании
+        t0 = brackets[list(brackets.keys())[0]]['count']
+        t1 = brackets[list(brackets.keys())[1]]['count']
+        brackets[list(brackets.keys())[0]]['count'] = max(0, brackets[list(brackets.keys())[0]]['count'] - t1)
+        brackets[list(brackets.keys())[1]]['count'] = max(0, brackets[list(brackets.keys())[1]]['count'] - t0)
+
+        # нормируем кол-во обычных скобок
+        for bracket in brackets:
+            if brackets[bracket]['count'] > 0:
+                if brackets[bracket]['count'] < 3:
+                    # на один или два знака ставим признак, равный 1
+                    brackets[bracket]['count'] = 1
+                else:
+                    # на три и более ставим 2
+                    brackets[bracket]['count'] = 2
+
+
+        # добавляем данные по скобкам в результат
+        for bracket in brackets:
+            result.append(brackets[bracket]['count'])
+            result.append(brackets[bracket]['strongCount'])
 
         return result
 

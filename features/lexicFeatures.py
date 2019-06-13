@@ -19,53 +19,45 @@ class lexicFeatures:
 
     def getPunctuantionRatings(self, message):
         """
-        проверка на наличие определенных знаков пунктуации в тексте сообщения
+        проверка на наличие и размещение определенных знаков пунктуации в тексте сообщения
         :param message: текст сообщения
         :type message: str
         :return: результат проверки в виде массива
         :rtype: list
         """
-        a = 0
-        b = 0
-        if '!' in message:
-            a = 1
-        if '?' in message:
-            b = 1
 
-        return [a, b]
+        result = list()
+        marks = {
+            '!' : {
+                'count': message.count('!'),
+                'repeatedness': False
+            },
+            '?' : {
+                'count': message.count('?'),
+                'repeatedness': False
+            }
+        }
+        marks = ['!', '?']
 
-    def getTwitterSpecificsRatings(self, message):
-        """
-        проверка на наличие twitter-специфичных символов в тексте сообщения, а также их нахождения в начале сообщения
-        :param message: текст сообщения
-        :type message: str
-        :return: результат проверки в виде массива
-        :rtype: list
-        """
-        a = 0
-        aLocation = 0
-        b = 0
-        bLocation = 0
-        c = 0
-        cLocation = 0
+        for mark in marks:
+            markCount = message.count(mark)
+            repeatedness = False
 
-        indexA = message.find('@')
-        indexB = message.find('#')
-        indexC = message.find('RT')
-        if indexA >= 0:
-            a = 1
-            if indexA == 0:
-                aLocation = 1
-        if indexB >= 0:
-            b = 1
-            if indexB == 0:
-                bLocation = 1
-        if indexC >= 0:
-            c = 1
-            if indexC == 0:
-                cLocation = 1
+            if markCount > 0:
+                if markCount < 3:
+                    # на один или два знака ставим признак, равный 1
+                    markCount = 1
+                else:
+                    # на три и более ставим 2
+                    markCount = 2
 
-        return [a, aLocation, b, bLocation, c, cLocation]
+                if mark*2 in message:
+                    # считаем, есть ли что-то вроде "!!!!!" в тексте
+                    repeatedness = True
+
+            result.extend([markCount, repeatedness])
+
+        return result
 
     def getAbbreviationsRatings(self, lemmas):
         """
@@ -76,20 +68,20 @@ class lexicFeatures:
         :rtype: list
         """
         # по умолчанию все признаки равны 0
-        result = [0] * len(self.abbreviationsList)
+        result = [False] * len(self.abbreviationsList)
 
         for index, abbreviation in enumerate(self.abbreviationsList):
             # если элемент списка сокращений не список, значит, это единичная аббревиатура
             if type(abbreviation) != list:
                 # если аббревиатура равна проверяемому слову сообщения, то признак равен 1
                 if abbreviation in lemmas:
-                    result[index] = 1
+                    result[index] = True
             # иначе элемент это список, тогда проверяем все аббревиатуры в этом списке
             else:
                 for abbreviationElement in abbreviation:
                     if abbreviationElement in lemmas:
                         # for  abbreviation in lemmas://////////////////ур, то признак равен 1
-                        result[index] = 1
+                        result[index] = True
                         break
         return result
 
@@ -101,9 +93,15 @@ class lexicFeatures:
         :return: результат проверки в виде массива
         :rtype: list
         """
-        result = [0, 0]
+
         INTJFound = False
         AFound = False
+        imperative_verb_found = False
+        indicative_verb_found = False
+        gerund_verb_found = False
+        participle_verb_found = False
+        infinitive_verb_found = False
+
         # проверяем каждое слово сообщения
         for word in analysis:
             POS = word['POS']
@@ -112,13 +110,21 @@ class lexicFeatures:
 
             if POS == 'INTJ':
                 INTJFound = True
-                result[0] = 1
 
             if POS == 'A' or POS == 'ANUM' or POS == 'APRO':
                 AFound = True
-                result[1] = 1
 
-            if INTJFound and AFound:
+            if POS == 'V':
+                imperative_verb_found = imperative_verb_found or word['verbsCharacteristics']['isImperative']
+                indicative_verb_found = indicative_verb_found or word['verbsCharacteristics']['isIndicative']
+                gerund_verb_found = gerund_verb_found or word['verbsCharacteristics']['isGerund']
+                participle_verb_found = participle_verb_found or word['verbsCharacteristics']['isParticiple']
+                infinitive_verb_found = infinitive_verb_found or word['verbsCharacteristics']['isInfinitive']
+
+            if INTJFound and AFound and imperative_verb_found and indicative_verb_found and gerund_verb_found and \
+                    participle_verb_found and infinitive_verb_found:
                 break
 
+        result = [INTJFound, AFound, imperative_verb_found, indicative_verb_found, gerund_verb_found,
+                  participle_verb_found, infinitive_verb_found]
         return result
