@@ -191,7 +191,7 @@ class nGramsFeaturesBuilder:
         filteredNGrams = list()
         # перебираем все n-граммы
         for ngram in ngramsList:
-            if ngram['inMessages'] >= inMessagesThreshold and ngram['totalFreq'] >= minFreqThreshold:
+            if ngram['inMessages'] is not None and ngram['inMessages'] >= inMessagesThreshold and ngram['totalFreq'] >= minFreqThreshold:
                 # и сохраняем только соответствующие требованиям
                 filteredNGrams.append(ngram)
         return filteredNGrams
