@@ -32,14 +32,14 @@ class nGramsFeaturesBuilder:
             # фильтруем группы по частотам
 
 
-            filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=len(analyticsList)/25, minFreqThreshold=len(analyticsList)/25)
+            filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=len(analyticsList)/50, minFreqThreshold=len(analyticsList)/50)
 
-            caching.saveVar('qwe1', ngramsCandidates)
+            caching.saveVar('qwe1', filteredCandidates)
 
         # vодифицируем группы, прописывая в них энтропии
         nGramsFeaturesBuilder.__calculateNGramsEntropy(filteredCandidates, classesList)
         # фильтруем группы по энтропии
-        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.45)
+        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.12)
 
         return filteredCandidates
 
@@ -230,6 +230,7 @@ class nGramsFeaturesBuilder:
         :param classes: список классов каждого текста
         :type classes: list
         """
+        logBase = 2
         # перебираем все n-граммы
         for ngram in ngramsList:
             countOfMessagesInClasses = dict()
@@ -267,14 +268,13 @@ class nGramsFeaturesBuilder:
                     p = freqByClasses[textClass] / ngram['totalFreq']
 
                     # затем находим энтропию
-                    base = 2
-                    entropy = -1 * p * math.log(p, base)
+                    entropy = -1 * p * math.log(p, logBase)
 
                     # и суммарную энтропию по всем классам
                     sumEntropy = sumEntropy + entropy
 
             # по окончании проверки всех классов нормализуем суммарную энтропию - делим её на общее количество сообщений
-            normalizedEntropy = sumEntropy /len(classes)
+            normalizedEntropy = sumEntropy / math.log(len(classes), logBase)
 
             # и записываем её в n-грамму
             ngram['normalizedEntropy'] = normalizedEntropy
