@@ -9,6 +9,15 @@ from common import caching
 from common import textPreps
 from features.main import featuresExtractor
 
+# 1 для работы с разделением выборки на обучающую и тестовую, 2 для работы со всей выборкой в целом
+MODE = [
+    True, # разделять ли выборку на обучающую и тестовую
+    False # делать ли вместо обучения поиск гиперпараметров
+]
+ID = "dataset 1"
+if(MODE[0] == False):
+    ID = "dataset 2"
+
 # сообщения обучающей выборки
 curDir = os.path.dirname(__file__)
 inputFile = os.path.join(curDir, "data/trainMessages.csv")
@@ -24,24 +33,26 @@ inputFixedMessages = [textPreps.prepareText(inputMessage) for inputMessage in in
 # их классы
 inputClasses = [message[1] for message in inputMessagesList]
 
-#trainMessages, testMessages, trainClasses, testClasses = model_selection.train_test_split(inputFixedMessages,
-#                                                                  inputClasses, test_size=0.2, stratify=inputClasses)
+if MODE[0]:
+    trainMessages, testMessages, trainClasses, testClasses = model_selection.train_test_split(inputFixedMessages,
+                                                                  inputClasses, test_size=0.2, stratify=inputClasses)
+else:
+    trainMessages = inputFixedMessages
+    trainClasses = inputClasses
+    testMessages = []
+    testClasses = []
 
-trainMessages = inputFixedMessages
-trainClasses = inputClasses
-#textsHash = 'dataset 1'
-textsHash = 'dataset 2'
 fe = featuresExtractor()
-if fe.isTrainingRequired(textsHash):
-    fe.trainNGrams(trainMessages, trainClasses, cache=True, textsHash = textsHash)
+if fe.isTrainingRequired(ID):
+    fe.trainNGrams(trainMessages, trainClasses, cache=True, textsHash = ID)
 
-trainFeatures = caching.readVar("featuresVectors for " + textsHash)
+trainFeatures = caching.readVar("featuresVectors for " + ID)
 if trainFeatures is None:
     trainFeatures = []
     for message in trainMessages:
         featuresVector = fe.getFeaturesVector(message)
         trainFeatures.append(featuresVector)
-    caching.saveVar("featuresVectors for "+textsHash, trainFeatures)
+    caching.saveVar("featuresVectors for " + ID, trainFeatures)
 
 
 # анализируемые сообщения
@@ -52,19 +63,28 @@ features = []
 classes = []
 
 c = classifiers()
-"""
-c.trainModels(trainFeatures, trainClasses)
 
-for index, message in enumerate(messages):
-    cleanMessage = textPreps.prepareText(message)
-    featuresVector = fe.getFeaturesVector(cleanMessage)
-    features.append(featuresVector)
-"""
-# messageClasses = c.predictModel(c.models.SVM, features)
-# messageClasses = c.predictModels(features)
-aa = c.findBestParamsForSVM(trainFeatures,trainClasses)
-bb = c.findBestParamsForNaiveBayes(trainFeatures,trainClasses)
-cc = c.findBestParamsForLogReg(trainFeatures,trainClasses)
-dd = c.findBestParamsForDecTree(trainFeatures,trainClasses)
+if MODE[1]:
+    aa = c.findBestParamsForSVM(trainFeatures, trainClasses)
+    bb = c.findBestParamsForNaiveBayes(trainFeatures, trainClasses)
+    cc = c.findBestParamsForLogReg(trainFeatures, trainClasses)
+    dd = c.findBestParamsForDecTree(trainFeatures, trainClasses)
+    result = {'svm': aa, 'NB': bb, 'LogReg': cc, 'DecTree': dd}
+else:
+    prediction = caching.readVar("prediction for test on " + ID)
+    if prediction is None:
+        c.trainModels(trainFeatures, trainClasses)
+        testFeatures = caching.readVar("featuresVectors for test on " + ID)
+        if testFeatures is None:
+            testFeatures = []
+            for message in testMessages:
+                featuresVector = fe.getFeaturesVector(message)
+                testFeatures.append(featuresVector)
+            caching.saveVar("featuresVectors for test on " + ID, testFeatures)
 
-q=1
+        prediction = c.predictModels(testFeatures)
+
+    caching.saveVar("prediction for test on " + ID, prediction)
+    result = prediction
+
+print(result)

@@ -11,16 +11,17 @@ class classifiers:
     class models:
         #https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
         # prefer dual=False when n_samples > n_features.
-        SVM = svm.SVC()
+        p = {}
+        SVM = svm.SVC(kernel='rbf', gamma='scale', C=1, class_weight=None, tol=0.1)
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
-        NaiveBayes = naive_bayes.MultinomialNB()
+        NaiveBayes = naive_bayes.MultinomialNB(alpha=0.05)
 
         #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-        LogReg = linear_model.LogisticRegression()
+        LogReg = linear_model.LogisticRegression(solver='newton-cg', class_weight=None)
 
         #https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
-        DecTree = tree.DecisionTreeClassifier()
+        DecTree = tree.DecisionTreeClassifier(max_depth=14, min_samples_split=0.3, min_samples_leaf=1, max_features=0.6)
 
 
     def __init__(self):
