@@ -14,21 +14,21 @@ class featuresExtractor:
         self.sf = semanticFeatures()
         self.ngrams = None
 
-    def isTrainingRequired(self, testsHash):
+    def isTrainingRequired(self, textsHash):
         """
         возвращает результат проверки наличия кеша результата расчёта n-грам с указанным идентификатором
-        :param testsHash: идентификатор
-        :type testsHash: str
+        :param textsHash: идентификатор
+        :type textsHash: str
         :return: результат проверки
         :rtype: bool
         """
-        ngrams = caching.readVar(testsHash)
+        ngrams = caching.readVar(textsHash)
         if ngrams is not None:
             self.ngrams = ngrams
             return False
         return True
 
-    def trainNGrams(self, trainMessages, trainClasses, cache=True, testsHash=None):
+    def trainNGrams(self, trainMessages, trainClasses, cache=True, textsHash=None):
         """
         построение списка n-грам по размеченным сообщениям
         :param trainMessages: сообщения обучающей выборки
@@ -37,8 +37,8 @@ class featuresExtractor:
         :type trainClasses: list
         :param cache: флаг необходимости кеширования результата расчётов
         :type cache: bool
-        :param testsHash: идентификатор искомого результата, может быть пустым
-        :type testsHash: str
+        :param textsHash: идентификатор искомого результата, может быть пустым
+        :type textsHash: str
         :return: идентификатор сохранённого результата
         :rtype: str
         """
@@ -46,35 +46,37 @@ class featuresExtractor:
         loadedFromCache = False
         if cache:
             # если кеширование включено, получаем хеш сообщений и пытаемся выгрузить n-граммы
-            if testsHash is None:
-                testsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
-            ngrams = caching.readVar(testsHash)
+            if textsHash is None:
+                textsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
+            ngrams = caching.readVar(textsHash)
             loadedFromCache = True
 
         if ngrams is None:
             loadedFromCache = False
             # для каждого сообщения из обучающей выборки
 
-            trainMessagesAnalytics = caching.readVar('qwe2')
-            if trainMessagesAnalytics is None:
-                trainMessagesAnalytics = list()
-                for trainMessage in trainMessages:
-                    # получаем данные аналитики
-                    textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
-                    trainMessagesAnalytics.append(textAnalytic)
-                caching.saveVar('qwe2', trainMessagesAnalytics)
+            #trainMessagesAnalytics = caching.readVar('qwe2')
+            #if trainMessagesAnalytics is None:
+
+            trainMessagesAnalytics = list()
+            for trainMessage in trainMessages:
+                # получаем данные аналитики
+                textAnalytic, wordsAnalytic, lemmas = textPreps.analyzeText(trainMessage)
+                trainMessagesAnalytics.append(textAnalytic)
+
+                #caching.saveVar('qwe2', trainMessagesAnalytics)
             # и затем строим список n-грам
             ngrams = nGramsFeaturesBuilder.train(trainMessagesAnalytics, trainClasses)
 
         if cache and not loadedFromCache:
             # если кеширование включено, записываем результат построения в кеш
-            if testsHash is None:
-                testsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
-            caching.saveVar(testsHash, ngrams)
+            if textsHash is None:
+                textsHash = hashlib.md5(''.join(trainMessages).encode("utf-8")).hexdigest()
+            caching.saveVar(textsHash, ngrams)
 
         self.ngrams = ngrams
 
-        return testsHash
+        return textsHash
 
     def getFeaturesVector(self, message):
         """
@@ -163,8 +165,8 @@ class featuresExtractor:
         :rtype: list
         """
         vector = list()
-        vector.append(self.sf.getOpinionWordsRating(lemmas))
-        vector.append(self.sf.getSmilesRating(message, lemmas))
+        vector.extend(self.sf.getOpinionWordsRating(lemmas))
+        vector.extend(self.sf.getSmilesRating(message, lemmas))
         vector.append(self.sf.getVulgarWordsRating(analysis, lemmas))
         vector.extend(self.sf.getSpeechActVerbsRatings(analysis, lemmas))
         return vector

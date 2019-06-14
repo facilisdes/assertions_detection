@@ -55,7 +55,13 @@ class lexicFeatures:
                     # считаем, есть ли что-то вроде "!!!!!" в тексте
                     repeatedness = True
 
-            result.extend([markCount, repeatedness])
+            # представление результата в виде булевого вектора
+            marksResult = [False] * 3
+            for mark in range(markCount+1):
+                marksResult[mark] = True
+
+            result.append(repeatedness)
+            result.extend(marksResult)
 
         return result
 

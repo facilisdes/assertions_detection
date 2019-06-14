@@ -109,14 +109,14 @@ class classifiers:
     def findBestParamsForSVM(self, features, classes):
         # 148 variants
         parameters = {
-            'kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
-            'gamma': ['scale', 'auto'],
+            'kernel': ['poly', 'rbf', 'sigmoid', 'linear'],
+            'gamma': ['auto', 'scale',],
             'C': [10**i for i in range(-1, 2)],
-            'class_weight': [None, "balanced"],
-            'tol': [0.1/(10**i) for i in range(1, 4)],
+            'class_weight': ["balanced", None],
+            'tol': [0.1/(10**i) for i in range(0, 4)],
         }
 
-        classifier = model_selection.GridSearchCV(self.models.SVM, parameters, n_jobs=-1, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.SVM, parameters, cv=3, error_score=0.0)
         classifier.fit(features, classes)
         self.models.SVM = classifier
 
@@ -136,7 +136,7 @@ class classifiers:
             'alpha': [0.01, 0.05, 0.1, 0.5, 0.75, 1, 1.25, 2, 5, 10, 100],
         }
 
-        classifier = model_selection.GridSearchCV(self.models.NaiveBayes, parameters, n_jobs=-1, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.NaiveBayes, parameters, cv=3, error_score=0.0)
         classifier.fit(features, classes)
         self.models.NaiveBayes = classifier
 
@@ -149,15 +149,15 @@ class classifiers:
     def findBestParamsForLogReg(self, features, classes):
         # 6 variants
         parameters = {
-            'solver': ['liblinear', 'newton-cg', 'lbfgs'],
+            'solver': ['newton-cg', 'lbfgs', 'liblinear'],
             'class_weight': [None, "balanced"],
         }
 
         # penalty=l2 поскольку только он применим к используемым солверам
-        LogReg = linear_model.LogisticRegressionCV(penalty='l2', n_jobs=-1, multi_class='auto')
+        LogReg = linear_model.LogisticRegressionCV(penalty='l2', multi_class='auto')
         self.models.LogReg = LogReg
 
-        classifier = model_selection.GridSearchCV(self.models.LogReg, parameters, n_jobs=-1, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.LogReg, parameters, cv=3, error_score=0.0)
         classifier.fit(features, classes)
         self.models.LogReg = classifier
 
@@ -172,17 +172,12 @@ class classifiers:
 
         parameters = {
             'max_depth': [None] + list(range(2,15)),
-            'min_samples_split': [i/10 for i in range(1, 9)] + list(range(1,4)),
+            'min_samples_split': [float(i/10) for i in range(1, 9)] + list(range(1,4)),
             'min_samples_leaf': list(range(1,3)) + [i/100 for i in range(20, 41, 5)],
             'max_features': [None] + [i/10 for i in range(1, 10)],
         }
 
-        DecTree = tree.DecisionTreeClassifier(criterion='gini', splitter='best', max_depth=None, min_samples_split=2,
-                                              min_samples_leaf=1, min_weight_fraction_leaf=0.0, max_features=None,
-                                              random_state=None, max_leaf_nodes=None, min_impurity_decrease=0.0,
-                                              min_impurity_split=None, class_weight=None, presort=False)
-
-        classifier = model_selection.GridSearchCV(self.models.DecTree, parameters, n_jobs=-1, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.DecTree, parameters, cv=3, error_score=0.0)
         classifier.fit(features, classes)
         self.models.DecTree = classifier
 

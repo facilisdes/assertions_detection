@@ -76,12 +76,22 @@ class semanticFeatures:
                 opinionWordsCount = 2
             else:
                 opinionWordsCount = 3
-
         for rating in opinionRatingsResult:
             if opinionRatingsResult[rating] > 3:
                 opinionRatingsResult[rating] = 3
 
-        return [opinionWordsCount, opinionRatingsResult['-2'], opinionRatingsResult['2']]
+        # после нормирования переводим в булевый вектор
+        opinionWordsResult = [False] * 3
+        for mark in range(opinionWordsCount):
+            opinionWordsResult[mark] = True
+        opinionRatingsResultBool = []
+        for rating in opinionRatingsResult:
+            opinionRatingsResultBoolTmp = [False] * 3
+            for mark in range(opinionRatingsResult[rating]):
+                opinionRatingsResultBoolTmp[mark] = True
+            opinionRatingsResultBool.extend(opinionRatingsResultBoolTmp)
+
+        return [*opinionWordsResult, *opinionRatingsResultBool]
 
     def getVulgarWordsRating(self, analysis, lemmas):
         """
@@ -168,11 +178,18 @@ class semanticFeatures:
                     # на три и более ставим 2
                     brackets[bracket]['count'] = 2
 
-
-        # добавляем данные по скобкам в результат
+        # переводим в булевый вектор
         for bracket in brackets:
-            result.append(brackets[bracket]['count'])
-            result.append(brackets[bracket]['strongCount'])
+            tmpResultCount = [False] * 2
+            tmpResultStrongCount = [False] * 2
+            for i in range(brackets[bracket]['count']):
+                tmpResultCount[i] = True
+            for i in range(brackets[bracket]['strongCount']):
+                tmpResultStrongCount[i] = True
+
+            # добавляем данные по скобкам в результат
+            result.extend(tmpResultCount)
+            result.extend(tmpResultStrongCount)
 
         return result
 
@@ -189,16 +206,16 @@ class semanticFeatures:
         """
         # список обозначений искомых форм и наклонений согласно формата mystem
         verbFeatures = ["isImperative", "isIndicative", "isGerund", "isParticiple", "isInfinitive"]
-        vector = [0] * len(self.speechActVerbsList)
+        vector = [False] * len(self.speechActVerbsList)
 
         # первым делом проверяем слова соообщения на их наличие в словаре
         for index, lemma in enumerate(self.speechActVerbsList):
             if lemma in lemmas:
-                vector[index] = 1
+                vector[index] = True
 
         # затем итеративно ищем искомые формы и наклонения
-        POSVector = [0] * len(verbFeatures)
-        fullPOSVector = [1] * len(verbFeatures)
+        POSVector = [False] * len(verbFeatures)
+        fullPOSVector = [True] * len(verbFeatures)
         for word in analysis:
             # если все искомые формы уже встретились, завершаем поиск
             if POSVector == fullPOSVector:
@@ -209,7 +226,7 @@ class semanticFeatures:
                 if ('verbsCharacteristics' in word and
                         verbFeature in word['verbsCharacteristics'] and
                         word['verbsCharacteristics'][verbFeature]):
-                    POSVector[index] = 1
+                    POSVector[index] = True
 
         vector.extend(POSVector)
 

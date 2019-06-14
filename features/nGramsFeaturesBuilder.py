@@ -16,25 +16,27 @@ class nGramsFeaturesBuilder:
         groupsList = list()
         flatGroupsList = list()
 
-        filteredCandidates = caching.readVar('qwe1')
-        if filteredCandidates is None:
+        #filteredCandidates = caching.readVar('qwe1')
+        #if filteredCandidates is None:
+        filteredCandidates = list()
+
         # определяем список групп слов
-            for analytic in analyticsList:
-                wordsGroup = nGramsFeaturesBuilder.__buildWordsGroups(analytic)
-                groupsList.append(wordsGroup)
-                flatGroupsList.extend(wordsGroup)
+        for analytic in analyticsList:
+            wordsGroup = nGramsFeaturesBuilder.__buildWordsGroups(analytic)
+            groupsList.append(wordsGroup)
+            flatGroupsList.extend(wordsGroup)
 
-            # определяем список кандидатов в n-граммы - группы слов ограниченной длины
-            ngramsCandidates = nGramsFeaturesBuilder.__buildRawNGrams(flatGroupsList, 3)
+        # определяем список кандидатов в n-граммы - группы слов ограниченной длины
+        ngramsCandidates = nGramsFeaturesBuilder.__buildRawNGrams(flatGroupsList, 3)
 
-            # модифицируем группы, прописывая в них частоты
-            nGramsFeaturesBuilder.__calculateWordsDocumentFrequency(ngramsCandidates, groupsList)
-            # фильтруем группы по частотам
+        # модифицируем группы, прописывая в них частоты
+        nGramsFeaturesBuilder.__calculateWordsDocumentFrequency(ngramsCandidates, groupsList)
+        # фильтруем группы по частотам
 
 
-            filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=len(analyticsList)/50, minFreqThreshold=len(analyticsList)/50)
+        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=len(analyticsList)/50, minFreqThreshold=len(analyticsList)/50)
 
-            caching.saveVar('qwe1', filteredCandidates)
+            #caching.saveVar('qwe1', filteredCandidates)
 
         # vодифицируем группы, прописывая в них энтропии
         nGramsFeaturesBuilder.__calculateNGramsEntropy(filteredCandidates, classesList)
