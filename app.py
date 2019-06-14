@@ -11,8 +11,9 @@ from features.main import featuresExtractor
 
 # 1 для работы с разделением выборки на обучающую и тестовую, 2 для работы со всей выборкой в целом
 MODE = [
-    True, # разделять ли выборку на обучающую и тестовую
-    False # делать ли вместо обучения поиск гиперпараметров
+    True,  # разделять ли выборку на обучающую и тестовую
+    False, # делать ли вместо обучения поиск гиперпараметров
+    True   # делать предсказание по всем моделям вместо лучшей
 ]
 ID = "dataset 1"
 if(MODE[0] == False):
@@ -73,7 +74,11 @@ if MODE[1]:
 else:
     prediction = caching.readVar("prediction for test on " + ID)
     if prediction is None:
-        c.trainModels(trainFeatures, trainClasses)
+        if MODE[2]:
+            c.trainModels(trainFeatures, trainClasses)
+        else:
+            c.trainModel(c.models.SVM, trainFeatures, trainClasses)
+
         testFeatures = caching.readVar("featuresVectors for test on " + ID)
         if testFeatures is None:
             testFeatures = []
@@ -82,9 +87,18 @@ else:
                 testFeatures.append(featuresVector)
             caching.saveVar("featuresVectors for test on " + ID, testFeatures)
 
-        prediction = c.predictModels(testFeatures)
+        if MODE[2]:
+            prediction = c.predictModels(testFeatures)
+        else:
+            prediction = c.predictModel(c.models.SVM, testFeatures)
 
     caching.saveVar("prediction for test on " + ID, prediction)
+
+    if MODE[2]:
+        f1Scores = {}
+        for model in prediction:
+            modelPrediction = prediction[model]
+
     result = prediction
 
 print(result)

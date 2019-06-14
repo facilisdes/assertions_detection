@@ -5,7 +5,7 @@ from sklearn import linear_model
 from sklearn import tree
 from sklearn import model_selection
 from sklearn import metrics
-
+import os
 
 class classifiers:
     class models:
@@ -99,13 +99,18 @@ class classifiers:
             self.saveModel(model, key + "_" + modelName)
 
     def loadModel(self, key):
-        model = joblib.load("/data/models/%s.pkl" % key)
-        return model
+        file = "/data/models/%s.pkl" % key
+        if os.path.isfile(file):
+            model = joblib.load(file)
+            return model
+        else:
+            return None
 
     def loadModels(self, key):
         for modelName in [x for x in dir(self.models) if not x.startswith('__')]:
             m = self.loadModel(key + "_" + modelName)
-            setattr(self.models, modelName, m)
+            if m is not None:
+                setattr(self.models, modelName, m)
 
     def findBestParamsForSVM(self, features, classes):
         # 148 variants
@@ -195,9 +200,6 @@ class classifiers:
         XT, XF, YT, YF = model_selection.train_test_split(features, classes, train_size)
 
         kf2 = model_selection.KFold(n_splits=5, shuffle=True, random_state=12345)
-
-
-
 
         # https: // scikit - learn.org / stable / modules / cross_validation.html  # cross-validation
         # https://chrisalbon.com/machine_learning/model_evaluation/cross_validation_parameter_tuning_grid_search/
