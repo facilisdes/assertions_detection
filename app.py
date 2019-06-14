@@ -9,7 +9,7 @@ from common import caching
 from common import textPreps
 from features.main import featuresExtractor
 
-# 1 для работы с разделением выборки на обучающую и тестовую, 2 для работы со всей выборкой в целом
+# общие параметры работы программы
 MODE = [
     True,  # разделять ли выборку на обучающую и тестовую
     False, # делать ли вместо обучения поиск гиперпараметров
