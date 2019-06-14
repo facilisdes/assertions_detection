@@ -36,7 +36,7 @@ inputClasses = [message[1] for message in inputMessagesList]
 
 if MODE[0]:
     trainMessages, testMessages, trainClasses, testClasses = model_selection.train_test_split(inputFixedMessages,
-                                                                  inputClasses, test_size=0.2, stratify=inputClasses)
+                                              inputClasses, test_size=0.2, random_state=12345, stratify=inputClasses)
 else:
     trainMessages = inputFixedMessages
     trainClasses = inputClasses
@@ -92,12 +92,13 @@ else:
         else:
             prediction = c.predictModel(c.models.SVM, testFeatures)
 
-    caching.saveVar("prediction for test on " + ID, prediction)
+        caching.saveVar("prediction for test on " + ID, prediction)
 
     if MODE[2]:
-        classes = [1, 2, 3, 4, 5, 6]
+        classes = set(testClasses)
         classes = list(map(str, classes))
         f1Errors = {c: {'FP': 0, 'FN': 0, 'TP': 0, 'TN': 0} for c in classes}
+        f1Scores = {}
         for model in prediction:
             modelPrediction = prediction[model]
             for i, classPrediction in enumerate(modelPrediction):
@@ -115,8 +116,9 @@ else:
                         continue
                     f1Errors[c]['TN'] += 1
 
-        f1Scores = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] + f1Errors[c]['FP']) for c
+            f1Scores[model] = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] + f1Errors[c]['FP']) for c
                     in f1Errors}
+            f1Scores[model]['sum'] = sum(f1Scores[model].values())
     result = prediction
 
 print(result)
