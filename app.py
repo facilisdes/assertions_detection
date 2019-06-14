@@ -11,12 +11,12 @@ from features.main import featuresExtractor
 
 # общие параметры работы программы
 MODE = [
-    True,  # разделять ли выборку на обучающую и тестовую
-    False, # делать ли вместо обучения поиск гиперпараметров
-    True   # делать предсказание по всем моделям вместо лучшей
+    True,   # разделять ли выборку на обучающую и тестовую
+    False,  # делать ли вместо обучения поиск гиперпараметров
+    True    # делать предсказание по всем моделям вместо лучшей
 ]
 ID = "dataset 1"
-if(MODE[0] == False):
+if MODE[0] == False:
     ID = "dataset 2"
 
 # сообщения обучающей выборки
@@ -95,10 +95,28 @@ else:
     caching.saveVar("prediction for test on " + ID, prediction)
 
     if MODE[2]:
-        f1Scores = {}
+        classes = [1, 2, 3, 4, 5, 6]
+        classes = list(map(str, classes))
+        f1Errors = {c: {'FP': 0, 'FN': 0, 'TP': 0, 'TN': 0} for c in classes}
         for model in prediction:
             modelPrediction = prediction[model]
+            for i, classPrediction in enumerate(modelPrediction):
+                classFact = testClasses[i]
+                if classFact != classPrediction:
+                    # false positive для найденного класса и false negative для упущенного
+                    f1Errors[classPrediction]['FP'] += 1
+                    f1Errors[classFact]['FN'] += 1
+                else:
+                    # true positive для найденного класса
+                    f1Errors[classPrediction]['TP'] += 1
+                # true negative для остальных
+                for c in classes:
+                    if c == classFact or c == classPrediction:
+                        continue
+                    f1Errors[c]['TN'] += 1
 
+        f1Scores = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] + f1Errors[c]['FP']) for c
+                    in f1Errors}
     result = prediction
 
 print(result)

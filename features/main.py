@@ -168,6 +168,7 @@ class featuresExtractor:
         vector.extend(self.sf.getOpinionWordsRating(lemmas))
         vector.extend(self.sf.getSmilesRating(message, lemmas))
         vector.append(self.sf.getVulgarWordsRating(analysis, lemmas))
+        vector.append(self.sf.getRecommendationWordsRating(analysis, lemmas))
         vector.extend(self.sf.getSpeechActVerbsRatings(analysis, lemmas))
         return vector
 

@@ -4,7 +4,8 @@ from emoji import UNICODE_EMOJI
 
 
 class semanticFeatures:
-    def __init__(self, speechActVerbsList=False, opinionWordsList=False, smilesList=False, vulgarWordsList=False):
+    def __init__(self, speechActVerbsList=False, opinionWordsList=False, smilesList=False, vulgarWordsList=False,
+                 recommendationWordsList=False):
         """
         инициализация - чтение данных из файлов
         :param speechActVerbsList: (опционально) путь к .csv-файлу со словарём глаголов,
@@ -31,6 +32,9 @@ class semanticFeatures:
         if vulgarWordsList is False:
             vulgarWordsList = 'data/vulgarWords.csv'
             vulgarWordsList = os.path.join(curDir, vulgarWordsList)
+        if recommendationWordsList is False:
+            recommendationWordsList = 'data/recommendationWords.csv'
+            recommendationWordsList = os.path.join(curDir, recommendationWordsList)
 
         if not os.path.isfile(speechActVerbsList):
             raise Exception("Speech act verbs file (%s) does not exists" % speechActVerbsList)
@@ -39,7 +43,9 @@ class semanticFeatures:
         if not os.path.isfile(smilesList):
             raise Exception("Smiles file (%s) does not exists" % smilesList)
         if not os.path.isfile(vulgarWordsList):
-            raise Exception("Smiles file (%s) does not exists" % vulgarWordsList)
+            raise Exception("Vulgar words file (%s) does not exists" % vulgarWordsList)
+        if not os.path.isfile(recommendationWordsList):
+            raise Exception("Recommendation words file (%s) does not exists" % recommendationWordsList)
 
         # читаем нулевой столбец каждого файла в массив
         with open(speechActVerbsList, 'r', encoding='utf-8-sig') as f:
@@ -50,6 +56,8 @@ class semanticFeatures:
             self.smilesList = [el[0] for el in csv.reader(f, delimiter=";")]
         with open(vulgarWordsList, 'r', encoding='utf-8-sig') as f:
             self.vulgarWordsList = [el[0] for el in csv.reader(f, delimiter=";")]
+        with open(recommendationWordsList, 'r', encoding='utf-8-sig') as f:
+            self.recommendationWordsList = [el[0] for el in csv.reader(f, delimiter=";")]
 
     def getOpinionWordsRating(self, lemmas):
         """
@@ -114,6 +122,25 @@ class semanticFeatures:
                 if word['isObscene']:
                     result = True
                     break
+
+        return result
+
+    def getRecommendationWordsRating(self, analysis, lemmas):
+        """
+        проверка на наличие в тексте слов рекомендации
+        :param analysis: данные по анализу слов текста
+        :type analysis: list
+        :param lemmas: список лемм слов текста
+        :type lemmas: list
+        :return: результат проверки в виде числа (0 или 1)
+        :rtype: int
+        """
+        result = False
+        # проверяем каждое рекомендующее слово из словаря на наличие в тексте
+        for recommendationWord in self.recommendationWordsList:
+            if recommendationWord in lemmas:
+                result = True
+                break
 
         return result
 
