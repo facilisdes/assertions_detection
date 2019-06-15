@@ -231,30 +231,11 @@ class semanticFeatures:
         :return: результат проверки в виде массива
         :rtype: list
         """
-        # список обозначений искомых форм и наклонений согласно формата mystem
-        verbFeatures = ["isImperative", "isIndicative", "isGerund", "isParticiple", "isInfinitive"]
         vector = [False] * len(self.speechActVerbsList)
 
         # первым делом проверяем слова соообщения на их наличие в словаре
         for index, lemma in enumerate(self.speechActVerbsList):
             if lemma in lemmas:
                 vector[index] = True
-
-        # затем итеративно ищем искомые формы и наклонения
-        POSVector = [False] * len(verbFeatures)
-        fullPOSVector = [True] * len(verbFeatures)
-        for word in analysis:
-            # если все искомые формы уже встретились, завершаем поиск
-            if POSVector == fullPOSVector:
-                break
-            if word['POS'] != 'V':
-                continue
-            for index, verbFeature in enumerate(verbFeatures):
-                if ('verbsCharacteristics' in word and
-                        verbFeature in word['verbsCharacteristics'] and
-                        word['verbsCharacteristics'][verbFeature]):
-                    POSVector[index] = True
-
-        vector.extend(POSVector)
 
         return vector

@@ -185,7 +185,7 @@ class featuresExtractor:
         :rtype: list
         """
         vector = list()
-        vector.extend(self.lf.getAbbreviationsRatings(lemmas))
+        vector.append(self.lf.getAbbreviationsRatings(lemmas))
         vector.extend(self.lf.getPunctuantionRatings(message))
         vector.extend(self.lf.getPOSRatings(analysis))
         return vector

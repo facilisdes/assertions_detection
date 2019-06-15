@@ -34,7 +34,7 @@ class nGramsFeaturesBuilder:
         # фильтруем группы по частотам
 
 
-        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=len(analyticsList)/50, minFreqThreshold=len(analyticsList)/50)
+        filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByFrequency(ngramsCandidates, inMessagesThreshold=int(len(analyticsList)/50), minFreqThreshold=int(len(analyticsList)/50))
 
             #caching.saveVar('qwe1', filteredCandidates)
 

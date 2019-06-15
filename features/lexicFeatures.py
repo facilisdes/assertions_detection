@@ -74,21 +74,22 @@ class lexicFeatures:
         :rtype: list
         """
         # по умолчанию все признаки равны 0
-        result = [False] * len(self.abbreviationsList)
+        result = False
 
         for index, abbreviation in enumerate(self.abbreviationsList):
+            if result == True:
+                break
             # если элемент списка сокращений не список, значит, это единичная аббревиатура
             if type(abbreviation) != list:
                 # если аббревиатура равна проверяемому слову сообщения, то признак равен 1
                 if abbreviation in lemmas:
-                    result[index] = True
+                    result = True
             # иначе элемент это список, тогда проверяем все аббревиатуры в этом списке
             else:
                 for abbreviationElement in abbreviation:
                     if abbreviationElement in lemmas:
                         # for  abbreviation in lemmas://////////////////ур, то признак равен 1
-                        result[index] = True
-                        break
+                        result = True
         return result
 
     def getPOSRatings(self, analysis):
