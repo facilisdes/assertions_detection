@@ -14,10 +14,11 @@ class classifiers:
         SVM = svm.SVC(kernel='rbf', gamma='scale', C=1, class_weight=None, tol=0.01)
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
-        NaiveBayes = naive_bayes.MultinomialNB(alpha=0.01)
+        NaiveBayes = naive_bayes.BernoulliNB(alpha=0.01)
 
         #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-        LogReg = linear_model.LogisticRegression(solver='newton-cg', class_weight=None, dual=False)
+        LogReg = linear_model.LogisticRegression(penalty='l2', multi_class='auto', solver='newton-cg',
+                                                 class_weight=None, dual=False)
 
         #https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
         DecTree = tree.DecisionTreeClassifier(max_depth=None, min_samples_split=0.1, min_samples_leaf=1, max_features=0.4)
@@ -156,10 +157,11 @@ class classifiers:
         parameters = {
             'solver': ['newton-cg', 'lbfgs', 'liblinear'],
             'class_weight': [None, "balanced"],
+            'multi_class': ["ovr", "multinomial"],
         }
 
         # penalty=l2 поскольку только он применим к используемым солверам
-        LogReg = linear_model.LogisticRegressionCV(penalty='l2', multi_class='auto')
+        LogReg = linear_model.LogisticRegressionCV(penalty='l2')
         self.models.LogReg = LogReg
 
         classifier = model_selection.GridSearchCV(self.models.LogReg, parameters, cv=3, error_score=0.0)
