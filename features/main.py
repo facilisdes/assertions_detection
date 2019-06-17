@@ -115,7 +115,7 @@ class featuresExtractor:
         :rtype: list
         """
         # для каждой n-граммы - если она есть в списке лемм, то признак равен 1, иначе 0
-        result = [0] * len(self.ngrams)
+        result = [False] * len(self.ngrams)
 
         # перебираем все слова текста
         for currentLemmaIndex, lemma in enumerate(lemmas):
@@ -147,7 +147,7 @@ class featuresExtractor:
 
                     if isNgramFound:
                         # и, если поиск удался, меняем метку в результирующем векторе
-                        result[currentNgramIndex] = 1
+                        result[currentNgramIndex] = True
 
         # возвращаем результирующий вектор
         return result

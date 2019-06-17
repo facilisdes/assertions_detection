@@ -11,17 +11,16 @@ class classifiers:
     class models:
         #https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
         # prefer dual=False when n_samples > n_features.
-        SVM = svm.SVC(kernel='rbf', gamma='scale', C=1, class_weight=None, tol=0.01)
+        SVM = svm.SVC(kernel='linear', gamma='auto', C=1, class_weight=None, tol=0.5, random_state=12345)
 
         # https://scikit-learn.org/stable/modules/generated/sklearn.naive_bayes.MultinomialNB.html
-        NaiveBayes = naive_bayes.BernoulliNB(alpha=0.01)
+        NaiveBayes = naive_bayes.MultinomialNB(alpha=0)
 
         #https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html
-        LogReg = linear_model.LogisticRegression(penalty='l2', multi_class='auto', solver='newton-cg',
-                                                 class_weight=None, dual=False)
+        LogReg = linear_model.LogisticRegression(penalty='l1', multi_class='ovr', solver='liblinear', class_weight='balanced', dual=False, C=0.6, tol=0.03, random_state=12345)
 
         #https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
-        DecTree = tree.DecisionTreeClassifier(max_depth=None, min_samples_split=0.1, min_samples_leaf=1, max_features=0.4)
+        DecTree = tree.DecisionTreeClassifier(max_depth=10, min_samples_split=0.1, min_samples_leaf=1, max_features=0.9, random_state=12345)
 
 
     def __init__(self):
@@ -117,12 +116,12 @@ class classifiers:
         parameters = {
             'kernel': ['poly', 'rbf', 'sigmoid', 'linear'],
             'gamma': ['auto', 'scale',],
-            'C': [10**i for i in range(-1, 2)],
+            'C': [0, 0.5, 0.75, 1, 1.2],
             'class_weight': ["balanced", None],
-            'tol': [0.1/(10**i) for i in range(0, 4)],
+            'tol': [0.4, 0.5, 0.6],
         }
 
-        classifier = model_selection.GridSearchCV(self.models.SVM, parameters, cv=3, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.SVM, parameters, cv=5, error_score=0.0)
         classifier.fit(features, classes)
         self.models.SVM = classifier
 
@@ -139,10 +138,10 @@ class classifiers:
     def findBestParamsForNaiveBayes(self, features, classes):
         # 11 variants
         parameters = {
-            'alpha': [0.01, 0.05, 0.1, 0.5, 0.75, 1, 1.25, 2, 5, 10, 100],
+            'alpha': [0, 0.25, 0.5, 0.75, 1],
         }
 
-        classifier = model_selection.GridSearchCV(self.models.NaiveBayes, parameters, cv=3, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.NaiveBayes, parameters, cv=5, error_score=0.0)
         classifier.fit(features, classes)
         self.models.NaiveBayes = classifier
 
@@ -155,22 +154,25 @@ class classifiers:
     def findBestParamsForLogReg(self, features, classes):
         # 6 variants
         parameters = {
+            'penalty': ['l1', 'l2'],
             'solver': ['newton-cg', 'lbfgs', 'liblinear'],
             'class_weight': [None, "balanced"],
             'multi_class': ["ovr", "multinomial"],
+            'C': [0.5, 0.6, 0.7],
+            'tol': [0.01, 0.03, 0.05],
         }
 
-        # penalty=l2 поскольку только он применим к используемым солверам
-        LogReg = linear_model.LogisticRegressionCV(penalty='l2')
-        self.models.LogReg = LogReg
-
-        classifier = model_selection.GridSearchCV(self.models.LogReg, parameters, cv=3, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.LogReg, parameters, cv=5, error_score=0.0)
         classifier.fit(features, classes)
         self.models.LogReg = classifier
 
         bestParams = {
             'solver': classifier.best_estimator_.solver,
+            'penalty': classifier.best_estimator_.penalty,
             'class_weight': classifier.best_estimator_.class_weight,
+            'multi_class': classifier.best_estimator_.multi_class,
+            'C': classifier.best_estimator_.C,
+            'tol': classifier.best_estimator_.tol,
         }
 
         return bestParams
@@ -184,7 +186,7 @@ class classifiers:
             'max_features': [None] + [i/10 for i in range(1, 10)],
         }
 
-        classifier = model_selection.GridSearchCV(self.models.DecTree, parameters, cv=3, error_score=0.0)
+        classifier = model_selection.GridSearchCV(self.models.DecTree, parameters, cv=5, error_score=0.0)
         classifier.fit(features, classes)
         self.models.DecTree = classifier
 
