@@ -1,4 +1,4 @@
-from sklearn.externals import joblib
+import joblib
 from sklearn import naive_bayes
 from sklearn import svm
 from sklearn import linear_model

@@ -1,13 +1,14 @@
 import csv
-import hashlib
 import os
 
 from sklearn import model_selection
 
 from classification.main import classifiers
+from clusterization.main import clusterizer
 from common import caching
 from common import textPreps
 from features.main import featuresExtractor
+
 
 def getSplits(X, Y, doSplits = False, randomState = 123456):
     if doSplits:
@@ -21,25 +22,62 @@ def getSplits(X, Y, doSplits = False, randomState = 123456):
 
     return XTrain, XTest, YTrain, YTest
 
+
+def humanReadableOutput(result):
+    predictions = result['prediction']
+    scores = result['scores']
+    clusters = result['clusters']
+
+    print("Этап 1. Вывод предсказаний для сообщений.")
+    for i, prediction in enumerate(predictions):
+        print('Текст: ' + testMessages[i])
+        print('Предсказание/Факт: ' + prediction + "/" + testClasses[i])
+        print("\n")
+
+    print("F1-меры измерений по каждому классу и в целом:")
+    for textClass in [1, 2, 3, 4]:
+        textClass = str(textClass)
+        print("Класс " + textClass + ", оценка " + str(round(scores[textClass], 2)))
+    print("Среднее  " + str(round(scores['avg'], 2)))
+    print("\n\n")
+    print("*"*120)
+
+    print("Этап 2. Вывод групп отзывов с выражением мнения.")
+    iter = 1
+    for clusterGroup in clusters:
+        print("Группа " + str(iter))
+        print("Тексты:")
+        print(*clusters[clusterGroup]['messages'], sep='\n')
+        print("Слова, описывающие группу:")
+        print(*clusters[clusterGroup]['leadWords'], sep='\n')
+        print("Слова мнения, опиcывающие группу:")
+        print(*clusters[clusterGroup]['leadOpinionWords'], sep='\n')
+        print("Рейтинг эмоциональности группы: " + str(clusters[clusterGroup]['opinionScore']))
+        print("\n")
+        iter+=1
+
+
 # общие параметры работы программы
 MODE = [
     True,   # разделять ли выборку на обучающую и тестовую
     False,  # делать ли вместо обучения поиск гиперпараметров
     False,    # делать предсказание по всем моделям вместо лучшей
-    True  # сбрасывать ли кеш
+    True,  # сбрасывать ли кеш
+    True # группировать ли отзывы
 ]
 ID = "dataset 1"
 if MODE[0] == False:
     ID = "dataset 2"
 
-ID+= ' with params ' + ','.join(map(str,MODE))
+ID += ' with params ' + ','.join(map(str,MODE[:4]))
 
 caching.saveVar("prediction for test on " + ID, None)
 
 if MODE[3] == True:
+    q = 1
     #caching.saveVar("featuresVectors for " + ID, None)
     #caching.saveVar("featuresVectors for test on " + ID, None)
-    caching.saveVar("prediction for test on " + ID, None)
+    #caching.saveVar("prediction for test on " + ID, None)
     #caching.saveVar('ngrams for ' + ID, None)
 
 # сообщения обучающей выборки
@@ -81,10 +119,10 @@ classes = []
 c = classifiers()
 
 if MODE[1]:
-    #svm = c.findBestParamsForSVM(trainFeatures, trainClasses)
-    #NB = c.findBestParamsForNaiveBayes(trainFeatures, trainClasses)
+    svm = c.findBestParamsForSVM(trainFeatures, trainClasses)
+    NB = c.findBestParamsForNaiveBayes(trainFeatures, trainClasses)
     LogReg = c.findBestParamsForLogReg(trainFeatures, trainClasses)
-    #DecTree = c.findBestParamsForDecTree(trainFeatures, trainClasses)
+    DecTree = c.findBestParamsForDecTree(trainFeatures, trainClasses)
     result = {'svm': svm, 'NB': NB, 'LogReg': LogReg, 'DecTree': DecTree}
 else:
     prediction = caching.readVar("prediction for test on " + ID)
@@ -112,6 +150,7 @@ else:
     if MODE[2]:
         classes = set(testClasses)
         classes = list(map(str, classes))
+        testClassesCounts = {c: testClasses.count(c) for c in classes}
         f1Errors = {c: {'FP': 0, 'FN': 0, 'TP': 0, 'TN': 0} for c in classes}
         f1Scores = {}
         for model in prediction:
@@ -131,13 +170,22 @@ else:
                         continue
                     f1Errors[c]['TN'] += 1
 
-            f1Scores[model] = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] + f1Errors[c]['FP']) for c
-                    in f1Errors}
+                for c in classes:
+                    classCount = testClassesCounts[c]
+                    f1Errors[c]['prec'] = (classCount-f1Errors[c]['FP']) / classCount
+                    f1Errors[c]['recall'] = (classCount-f1Errors[c]['FN']) / classCount
+
+            f1Scores[model] = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] +
+                                                           f1Errors[c]['FP']) for c in f1Errors}
             f1Scores[model]['sum'] = sum(f1Scores[model].values())
             f1Scores[model]['avg'] = f1Scores[model]['sum'] / len(classes)
+
+            f1Scores[model]['prec'] = {p: f1Errors[p]['prec'] for p in f1Errors}
+            f1Scores[model]['recall'] = {p: f1Errors[p]['recall'] for p in f1Errors}
     else:
         classes = set(testClasses)
         classes = list(map(str, classes))
+        testClassesCounts = {c: testClasses.count(c) for c in classes}
         f1Errors = {c: {'FP': 0, 'FN': 0, 'TP': 0, 'TN': 0} for c in classes}
         f1Scores = {}
 
@@ -155,6 +203,10 @@ else:
                 if c == classFact or c == classPrediction:
                     continue
                 f1Errors[c]['TN'] += 1
+            for c in classes:
+                classCount = testClassesCounts[c]
+                f1Errors[c]['prec'] = (classCount-f1Errors[c]['FP']) / classCount
+                f1Errors[c]['recall'] = (classCount-f1Errors[c]['FN']) / classCount
 
         f1Scores = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] + f1Errors[c]['FP'])
                            for c
@@ -162,7 +214,24 @@ else:
         f1Scores['sum'] = sum(f1Scores.values())
         f1Scores['avg'] = f1Scores['sum'] / len(classes)
 
-    result = [prediction, f1Scores]
+        f1Scores['prec'] = {p: f1Errors[p]['prec'] for p in f1Errors}
+        f1Scores['recall'] = {p: f1Errors[p]['recall'] for p in f1Errors}
 
-print(result)
+    result = {'prediction': prediction, 'scores': f1Scores}
 
+if MODE[4]:
+    statementMessages = []
+    for i, classIndex in enumerate(prediction):
+        if classIndex == '3':
+            statementMessages.append(testMessages[i])
+
+    cl = clusterizer()
+    clusters = cl.clusterize(statementMessages, groupByOpinionWords=True, cacheHash="clusterizing for " + ID,
+                             resetCache=True)
+    result['clusters'] = clusters
+
+    humanReadableOutput(result)
+
+
+else:
+    print(result)

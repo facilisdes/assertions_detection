@@ -73,8 +73,11 @@ def __mystemWrapper(text):
     m = Mystem()
     rawAnalytics = m.analyze(text)
 
+    # аналитика по всему тексту - включая нераспозанные элементы
     textAnalytics = list()
+    # аналитика только по словам
     wordsAnalytics = list()
+    # леммы слов
     lemmas = list()
 
     # перебираем выход mystem

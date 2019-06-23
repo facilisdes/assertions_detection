@@ -1,6 +1,7 @@
 import redis
 import pickle
 import hashlib
+import functools
 
 pool = redis.ConnectionPool(host='176.223.134.183', port=14890, password='vr@`~ud`b#U5{}v=~z*BANPJW>WAA-dJ!+D:5{r:sA,=[[.bWpLRQX#;Y~bp', db=0)
 r = redis.Redis(connection_pool=pool)
@@ -107,3 +108,21 @@ def readVar(name):
     if rawResult is not None:
         result = pickle.loads(rawResult)
     return result
+
+
+
+def cacheFuncOutput(func):
+    """обёртка для реализации кеширования выхода функции"""
+    @functools.wraps(func)
+    def wrapper_timer(*args, **kwargs):
+        if 'cacheHash' in kwargs and kwargs['cacheHash'] is not None:
+            # если есть хеш, пытаемся прочитать по нему из кеша
+            result = readVar(kwargs['cacheHash'])
+            if result is not None:
+                return result
+        value = func(*args, **kwargs)
+        if 'cacheHash' in kwargs and kwargs['cacheHash'] is not None:
+            # если есть хеш, пытаемся сохранить по нему
+            saveVar(kwargs['cacheHash'], value)
+        return value
+    return wrapper_timer
