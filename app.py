@@ -61,7 +61,7 @@ def humanReadableOutput(result):
 MODE = [
     True,   # разделять ли выборку на обучающую и тестовую
     False,  # делать ли вместо обучения поиск гиперпараметров
-    False,    # делать предсказание по всем моделям вместо лучшей
+    True,    # делать предсказание по всем моделям вместо лучшей
     True,  # сбрасывать ли кеш
     True # группировать ли отзывы
 ]
@@ -151,9 +151,10 @@ else:
         classes = set(testClasses)
         classes = list(map(str, classes))
         testClassesCounts = {c: testClasses.count(c) for c in classes}
-        f1Errors = {c: {'FP': 0, 'FN': 0, 'TP': 0, 'TN': 0} for c in classes}
+
         f1Scores = {}
         for model in prediction:
+            f1Errors = {c: {'FP': 0, 'FN': 0, 'TP': 0, 'TN': 0} for c in classes}
             modelPrediction = prediction[model]
             for i, classPrediction in enumerate(modelPrediction):
                 classFact = testClasses[i]
@@ -170,10 +171,10 @@ else:
                         continue
                     f1Errors[c]['TN'] += 1
 
-                for c in classes:
-                    classCount = testClassesCounts[c]
-                    f1Errors[c]['prec'] = (classCount-f1Errors[c]['FP']) / classCount
-                    f1Errors[c]['recall'] = (classCount-f1Errors[c]['FN']) / classCount
+            for c in classes:
+                classCount = testClassesCounts[c]
+                f1Errors[c]['prec'] = (classCount-f1Errors[c]['FP']) / classCount
+                f1Errors[c]['recall'] = (classCount-f1Errors[c]['FN']) / classCount
 
             f1Scores[model] = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] +
                                                            f1Errors[c]['FP']) for c in f1Errors}
@@ -203,10 +204,10 @@ else:
                 if c == classFact or c == classPrediction:
                     continue
                 f1Errors[c]['TN'] += 1
-            for c in classes:
-                classCount = testClassesCounts[c]
-                f1Errors[c]['prec'] = (classCount-f1Errors[c]['FP']) / classCount
-                f1Errors[c]['recall'] = (classCount-f1Errors[c]['FN']) / classCount
+        for c in classes:
+            classCount = testClassesCounts[c]
+            f1Errors[c]['prec'] = (classCount-f1Errors[c]['FP']) / classCount
+            f1Errors[c]['recall'] = (classCount-f1Errors[c]['FN']) / classCount
 
         f1Scores = {c: 2 * f1Errors[c]['TP'] / (2 * f1Errors[c]['TP'] + f1Errors[c]['FN'] + f1Errors[c]['FP'])
                            for c

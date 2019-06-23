@@ -56,8 +56,8 @@ class lexicFeatures:
                     repeatedness = True
 
             # представление результата в виде булевого вектора
-            marksResult = [False] * 3
-            for mark in range(markCount+1):
+            marksResult = [False] * 2
+            for mark in range(markCount):
                 marksResult[mark] = True
 
             result.append(repeatedness)
