@@ -9,6 +9,15 @@ from common import caching
 from common import textPreps
 from features.main import featuresExtractor
 
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn import svm, datasets
+from sklearn.metrics import roc_curve, auc
+from sklearn.preprocessing import label_binarize
+from sklearn.multiclass import OneVsRestClassifier
+import random
+import copy
+
 
 def getSplits(X, Y, doSplits = False, randomState = 123456):
     if doSplits:
@@ -61,7 +70,7 @@ def humanReadableOutput(result):
 MODE = [
     True,   # разделять ли выборку на обучающую и тестовую
     False,  # делать ли вместо обучения поиск гиперпараметров
-    True,    # делать предсказание по всем моделям вместо лучшей
+    False,    # делать предсказание по всем моделям вместо лучшей
     True,  # сбрасывать ли кеш
     True # группировать ли отзывы
 ]
@@ -127,11 +136,6 @@ if MODE[1]:
 else:
     prediction = caching.readVar("prediction for test on " + ID)
     if prediction is None:
-        if MODE[2]:
-            c.trainModels(trainFeatures, trainClasses)
-        else:
-            c.trainModel(c.models.SVM, trainFeatures, trainClasses)
-
         testFeatures = caching.readVar("featuresVectors for test on " + ID)
         if testFeatures is None:
             testFeatures = []
@@ -139,6 +143,13 @@ else:
                 featuresVector = fe.getFeaturesVector(message)
                 testFeatures.append(featuresVector)
             caching.saveVar("featuresVectors for test on " + ID, testFeatures)
+
+        if MODE[2]:
+            c.trainModels(trainFeatures, trainClasses)
+        else:
+            y_score = c.models.SVM.fit(trainFeatures, trainClasses).decision_function(trainFeatures)
+            #c.trainModel(c.models.LogReg, trainFeatures, trainClasses)
+
 
         if MODE[2]:
             prediction = c.predictModels(testFeatures)
@@ -159,7 +170,7 @@ else:
             for i, classPrediction in enumerate(modelPrediction):
                 classFact = testClasses[i]
                 if classFact != classPrediction:
-                    # false positive для найденного класса и false negative для упущенного
+                    # false pos itive для найденного класса и false negative для упущенного
                     f1Errors[classPrediction]['FP'] += 1
                     f1Errors[classFact]['FN'] += 1
                 else:
@@ -228,7 +239,7 @@ if MODE[4]:
 
     cl = clusterizer()
     clusters = cl.clusterize(statementMessages, groupByOpinionWords=True, cacheHash="clusterizing for " + ID,
-                             resetCache=True)
+                             resetCache=False)
     result['clusters'] = clusters
 
     humanReadableOutput(result)
