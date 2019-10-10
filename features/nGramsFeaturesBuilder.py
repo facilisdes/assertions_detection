@@ -38,7 +38,7 @@ class nGramsFeaturesBuilder:
 
             #caching.saveVar('qwe1', filteredCandidates)
 
-        # vодифицируем группы, прописывая в них энтропии
+        # модифицируем группы, прописывая в них энтропии
         nGramsFeaturesBuilder.__calculateNGramsEntropy(filteredCandidates, classesList)
         # фильтруем группы по энтропии
         filteredCandidates = nGramsFeaturesBuilder.__filterNGramsByEntropy(filteredCandidates, entropyThreshold=0.15)
