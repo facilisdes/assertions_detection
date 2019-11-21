@@ -1,5 +1,6 @@
 <VirtualHost *:80>
        ServerName localhost
+       ServerAlias localhost
        DocumentRoot /var/www/project/project/public
 
        <Directory /var/www/project/project>
